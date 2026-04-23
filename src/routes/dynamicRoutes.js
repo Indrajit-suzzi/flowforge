@@ -18,9 +18,9 @@ const userSchema = {
   email: String
 };
 
-const User = getModel('User', userSchema);
+const DynamicUser = getModel("DynamicUser", userSchema);
 
-router.post('/users', create(User));
-router.get('/users', authMiddleware, getAll(User));
+router.post('/users', create(DynamicUser));
+router.get('/users', authMiddleware, getAll(DynamicUser));
 
 export default router;
