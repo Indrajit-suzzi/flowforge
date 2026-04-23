@@ -1,29 +1,26 @@
-import express from "express";
+import express from 'express';
 
-import getModel from "../models/genericModel.js";
+import getModel from '../models/genericModel.js';
 import {
   create,
   getAll,
   getOne,
   update,
-  remove,
-} from "../controllers/genericController.js";
+  remove
+} from '../controllers/genericController.js';
+
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Example
 const userSchema = {
   username: String,
-  email: String,
+  email: String
 };
 
-const User = getModel("User", userSchema);
+const User = getModel('User', userSchema);
 
-// Routes for users
-router.post("/users", create(User));
-router.get("/users", getAll(User));
-router.get("/users/:id", getOne(User));
-router.put("/users/:id", update(User));
-router.delete("/users/:id", remove(User));
+router.post('/users', create(User));
+router.get('/users', authMiddleware, getAll(User));
 
 export default router;
