@@ -27,6 +27,6 @@ FlowForge is a reusable backend system with dynamic schema handling and secure a
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/flowforge.git
+git clone https://github.com/Indrajit-suzzi/flowforge.git
 cd flowforge
 npm install
