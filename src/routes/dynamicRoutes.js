@@ -9,8 +9,6 @@ import {
   remove
 } from '../controllers/genericController.js';
 
-import authMiddleware from '../middlewares/authMiddleware.js';
-
 const router = express.Router();
 
 const userSchema = {
@@ -21,6 +19,6 @@ const userSchema = {
 const DynamicUser = getModel("DynamicUser", userSchema);
 
 router.post('/users', create(DynamicUser));
-router.get('/users', authMiddleware, getAll(DynamicUser));
+router.get('/users', getAll(DynamicUser));
 
 export default router;
