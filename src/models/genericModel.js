@@ -12,9 +12,19 @@ const getModel = (name, schemaDefinition) => {
     return modelCache[name];
   }
 
-  const schema = new mongoose.Schema(schemaDefinition, {
-    timestamps: true,
-  });
+  const schema = new mongoose.Schema(
+    {
+      ...schemaDefinition,
+      tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+    },
+    {
+      timestamps: true,
+    }
+  );
 
 
   const model = mongoose.model(name, schema);

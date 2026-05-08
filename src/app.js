@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import dynamicRoutes from "./routes/dynamicRoutes.js";
+import contentTypeRoutes from "./routes/contentTypeRoutes.js";
 import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middlewares/authMiddleware.js';
 import tenantMiddleware from './middlewares/tenantMiddleware.js';
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/v1/dynamic", authMiddleware, tenantMiddleware, dynamicRoutes);
+app.use("/api/v1/content-types", authMiddleware, tenantMiddleware, contentTypeRoutes);
 app.use('/api/auth', authRoutes);
 
 app.get("/", (req, res) => {

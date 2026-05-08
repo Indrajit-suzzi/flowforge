@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const contentTypeSchema = new mongoose.Schema({
     tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -14,4 +14,6 @@ const contentTypeSchema = new mongoose.Schema({
 // Ensure slug is unique per tenant
 contentTypeSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
 
-module.exports = mongoose.model('ContentType', contentTypeSchema);
+const ContentType = mongoose.models.ContentType || mongoose.model('ContentType', contentTypeSchema);
+
+export default ContentType;

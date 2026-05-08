@@ -16,7 +16,7 @@
 - Create: `src/middlewares/tenantMiddleware.js`
 - Modify: `src/app.js`
 
-- [ ] **Step 1: Create tenant middleware**
+- [x] **Step 1: Create tenant middleware**
 ```javascript
 const tenantMiddleware = (req, res, next) => {
     // req.user is populated by authMiddleware
@@ -30,10 +30,10 @@ const tenantMiddleware = (req, res, next) => {
 module.exports = tenantMiddleware;
 ```
 
-- [ ] **Step 2: Mount middleware in app.js**
+- [x] **Step 2: Mount middleware in app.js**
 Modify `src/app.js` to use `tenantMiddleware` on dynamic routes.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 ```bash
 git add src/middlewares/tenantMiddleware.js src/app.js
 git commit -m "feat: add tenant middleware for request scoping"
@@ -44,7 +44,7 @@ git commit -m "feat: add tenant middleware for request scoping"
 **Files:**
 - Create: `src/models/contentType.js`
 
-- [ ] **Step 1: Define ContentType schema**
+- [x] **Step 1: Define ContentType schema**
 ```javascript
 const mongoose = require('mongoose');
 
@@ -65,7 +65,7 @@ contentTypeSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
 module.exports = mongoose.model('ContentType', contentTypeSchema);
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 ```bash
 git add src/models/contentType.js
 git commit -m "feat: add ContentType model for custom schemas"
@@ -111,13 +111,13 @@ git commit -m "feat: ensure dynamic models include tenantId"
 - Create: `src/routes/contentTypeRoutes.js`
 - Modify: `src/app.js`
 
-- [ ] **Step 1: Create ContentType routes**
+- [x] **Step 1: Create ContentType routes**
 Use `genericController` with the `ContentType` model.
 
-- [ ] **Step 2: Mount routes in app.js**
+- [x] **Step 2: Mount routes in app.js**
 Mount at `/api/v1/content-types`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 ```bash
 git add src/routes/contentTypeRoutes.js src/app.js
 git commit -m "feat: add API routes for content type management"
