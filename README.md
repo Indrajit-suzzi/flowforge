@@ -1,57 +1,74 @@
-# 🚀 FlowForge
+# FlowForge
 
-FlowForge is a reusable backend system with dynamic schema handling and secure authentication with a full admin dashboard.
+A multi-tenant headless CMS with dynamic schema generation, API key management, role-based access control, and a React admin dashboard.
 
----
+## Features
 
-## 🧠 Features
+### Core
+- **Dynamic Schema Generation** - Create content types on the fly with custom fields
+- **Multi-Tenant Architecture** - Isolated data per tenant with automatic scoping
+- **Role-Based Access Control** - Admin, SubAdmin, and User roles with granular permissions
+- **API Key Management** - Scoped keys with read/write/delete permissions for external access
+- **Draft/Publish Workflow** - Content versioning with status tracking
 
-- 🔐 JWT Authentication (Login/Register)
-- 🔒 Password hashing using bcrypt
-- 🛡️ Protected routes with middleware
-- ⚙️ Dynamic API generation (generic controllers)
-- 🔑 Scoped API key management
-- 🐳 Docker-ready backend setup
-- 🖥️ React admin dashboard
+### Dashboard
+- **Analytics** - API usage stats, top endpoints, period filtering
+- **Audit Logs** - Track all actions with user, action, and timestamp
+- **Media Library** - Upload, filter, and manage media files
+- **Webhooks** - Trigger external endpoints on content events
+- **Content Templates** - 8 pre-built schemas (Blog, Portfolio, E-commerce, etc.)
+- **Bulk Operations** - Select, publish, or delete multiple entries at once
+- **Search & Filter** - Quick search across entries and content types
 
----
+### Security
+- JWT authentication for dashboard access
+- API key authentication for external integrations
+- Rate limiting on all endpoints
+- Input validation with Joi schemas
+- CORS configuration with header whitelisting
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend:** Node.js, Express 5, MongoDB (Mongoose), JWT, Joi
-- **Frontend:** React 19, Vite, Tailwind CSS 4, React Router, Axios
-- **Infrastructure:** Docker, Docker Compose
+- **Frontend:** React 19, Vite, React Router, Axios, Lucide Icons
+- **Styling:** Inline styles (dark theme, no external CSS frameworks)
 
----
-
-## 📦 Project Structure
+## Project Structure
 
 ```
 flowforge/
-├── backend/          # Express API server
+├── backend/
 │   ├── src/
-│   │   ├── config/       # DB connection
-│   │   ├── controllers/  # Route handlers
-│   │   ├── middlewares/  # Auth, tenant, scope, validation
-│   │   ├── models/       # Mongoose schemas
-│   │   ├── routes/       # Express routers
-│   │   └── utils/        # Helpers
-│   ├── .env              # Environment variables
-│   ├── server.js         # Entry point
+│   │   ├── config/          # Database connection
+│   │   ├── controllers/     # Route handlers
+│   │   ├── middlewares/     # Auth, tenant, role, rate limit, validation
+│   │   ├── models/          # Mongoose schemas
+│   │   ├── routes/          # Express routers
+│   │   └── utils/           # Helpers, templates, webhooks
+│   ├── uploads/             # Media files (gitignored)
+│   ├── .env                 # Environment variables
+│   ├── server.js            # Entry point
+│   ├── seed.js              # Seed script for dummy users
+│   ├── Dockerfile
 │   └── docker-compose.yml
-├── frontend/         # React admin dashboard
+├── frontend/
 │   ├── src/
-│   │   ├── components/ # Shared UI components
-│   │   ├── context/    # Auth context
-│   │   ├── pages/      # Route pages
-│   │   └── utils/      # API client
+│   │   ├── components/      # Navbar, loading states, rich text editor
+│   │   ├── context/         # Auth context with permissions
+│   │   ├── pages/           # Dashboard, content, settings, etc.
+│   │   └── utils/           # API client with auto-auth headers
 │   └── vite.config.js
-└── docs/             # PRD, specs, plans
+├── docs/
+│   └── PRD.md               # Product requirements document
+└── example-integration.html # Standalone integration example
 ```
 
----
+## Getting Started
 
-## 🚀 Getting Started
+### Prerequisites
+
+- Node.js 18+
+- MongoDB
 
 ### Backend
 
@@ -62,8 +79,9 @@ npm install
 npm run dev
 ```
 
-**Environment Variables (`.env`):**
-```
+**Environment Variables:**
+
+```env
 PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/flowforge
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
@@ -77,7 +95,7 @@ npm install
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and proxies `/api` requests to the backend at `http://localhost:3000`.
+The frontend runs on `http://localhost:5173` and proxies `/api` requests to the backend.
 
 ### Docker (Backend)
 
@@ -86,43 +104,61 @@ cd backend
 docker-compose up -d
 ```
 
----
+### Seed Data
 
-## 📡 API Endpoints
+```bash
+cd backend
+node seed.js
+```
 
-### Auth
-| Method | Path | Body |
-|---|---|---|
-| POST | `/api/auth/register` | `{ username, email, password }` |
-| POST | `/api/auth/login` | `{ email, password }` → `{ token }` |
+Creates dummy users for testing:
+- `admin@flowforge.com` / `admin123` (Admin role)
+- `user@flowforge.com` / `user123` (User role)
 
-### Content Types (JWT required)
-| Method | Path |
+## API Usage
+
+### Authentication
+
+**JWT (Dashboard):**
+```
+Authorization: Bearer <token>
+```
+
+**API Key (External):**
+```
+X-API-Key: flow_xxxxx...
+```
+
+### Quick Start
+
+```javascript
+const API_KEY = 'your-api-key';
+const BASE_URL = 'http://localhost:3000/api/v1';
+
+// Fetch content
+const response = await fetch(`${BASE_URL}/dynamic/blog`, {
+  headers: { 'X-API-Key': API_KEY }
+});
+const posts = await response.json();
+```
+
+### Endpoints Overview
+
+| Category | Routes |
 |---|---|
-| POST | `/api/v1/content-types` |
-| GET | `/api/v1/content-types` |
-| GET | `/api/v1/content-types/:id` |
-| PUT | `/api/v1/content-types/:id` |
-| DELETE | `/api/v1/content-types/:id` |
+| Auth | `/api/auth/register`, `/api/auth/login` |
+| Content Types | `/api/v1/content-types`, `/api/v1/content-types/templates` |
+| Dynamic Content | `/api/v1/dynamic/:slug` |
+| API Keys | `/api/v1/api-keys` |
+| Media | `/api/v1/media` |
+| Analytics | `/api/v1/analytics`, `/api/v1/analytics/top-endpoints` |
+| Audit Logs | `/api/v1/audit-logs`, `/api/v1/audit-logs/stats` |
+| Users | `/api/v1/users`, `/api/v1/users/:id` |
+| Webhooks | `/api/v1/webhooks` |
+| API Docs | `/api/v1/docs`, `/api/v1/docs/markdown` |
 
-### Dynamic Content (JWT or API Key)
-| Method | Path | Scope |
-|---|---|---|
-| POST | `/api/v1/dynamic/:slug` | `write` |
-| GET | `/api/v1/dynamic/:slug` | `read` |
-| GET | `/api/v1/dynamic/:slug/:id` | `read` |
-| PUT | `/api/v1/dynamic/:slug/:id` | `write` |
-| DELETE | `/api/v1/dynamic/:slug/:id` | `delete` |
+Full documentation available in the dashboard under **API Docs** or via `/api/v1/docs`.
 
-### API Keys (JWT required)
-| Method | Path |
-|---|---|
-| POST | `/api/v1/api-keys` |
-| GET | `/api/v1/api-keys` |
-| DELETE | `/api/v1/api-keys/:id` |
-
----
-
-## 📄 License
+## License
 
 ISC
