@@ -17,19 +17,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'subadmin', 'admin'],
-      default: 'user'
-    },
-    permissions: {
-      contentTypes: { type: Boolean, default: true },
-      contentEntries: { type: Boolean, default: true },
-      apiKeys: { type: Boolean, default: true },
-      analytics: { type: Boolean, default: true },
-      auditLogs: { type: Boolean, default: false },
-      webhooks: { type: Boolean, default: false },
-      mediaLibrary: { type: Boolean, default: true },
-      userManagement: { type: Boolean, default: false },
-      systemSettings: { type: Boolean, default: false }
+      enum: ['member', 'admin'],
+      default: 'member'
     },
     isActive: {
       type: Boolean,

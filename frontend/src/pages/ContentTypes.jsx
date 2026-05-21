@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ArrowLeft, LayoutTemplate, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, LayoutTemplate, Search, Layers, Sparkles } from 'lucide-react';
 import api from '../utils/api';
-import LoadingScreen from '../components/LoadingScreen';
 import LoadingButton from '../components/LoadingButton';
+import PageShell from '../components/PageShell';
+import FilterBar from '../components/FilterBar';
 
 export default function ContentTypes() {
   const [contentTypes, setContentTypes] = useState([]);
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -18,6 +19,7 @@ export default function ContentTypes() {
   const [search, setSearch] = useState('');
 
   useEffect(() => { 
+    setLoading(true);
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data || []),
       api.get('/api/v1/content-types/templates').then(r => r.data || [])
@@ -72,103 +74,110 @@ export default function ContentTypes() {
     ct.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <LoadingScreen message="Loading content types" />;
-
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#f1f5f9' }}>Content Types</h1>
-          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>Define schemas for your content</p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => setShowTemplates(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '500', color: '#e2e8f0', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer' }}>
+    <PageShell
+      title="Content Types"
+      subtitle="Define schemas for your content"
+      icon={<Layers style={{ width: '22px', height: '22px' }} />}
+      actions={
+        <>
+          <button onClick={() => setShowTemplates(true)} className="btn-secondary" style={{ padding: '9px 18px', fontSize: '13px' }}>
             <LayoutTemplate style={{ width: '14px', height: '14px' }} /> From Template
           </button>
-          <button onClick={() => setShowForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', color: 'white', background: 'linear-gradient(90deg, #3b82f6, #6366f1)', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => setShowForm(true)} className="btn-primary" style={{ padding: '9px 18px', fontSize: '13px' }}>
             <Plus style={{ width: '14px', height: '14px' }} /> New Content Type
           </button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
+      {/* Templates Modal */}
       {showTemplates && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowTemplates(false)}>
-          <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '12px', padding: '24px', maxWidth: '700px', width: '100%', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '16px' }}>Choose a Template</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+        <div className="modal-overlay" onClick={() => setShowTemplates(false)}>
+          <div className="glass-card modal-content" style={{ padding: '28px', maxWidth: '700px' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>Choose a Template</h3>
+            <div className="grid-auto-fill" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
               {templates.map(t => (
-                <button key={t.slug} onClick={() => handleTemplate(t.slug)} style={{ background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', padding: '16px', cursor: 'pointer', textAlign: 'left' }}>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#f1f5f9' }}>{t.name}</p>
+                <button key={t.slug} onClick={() => handleTemplate(t.slug)} className="glass-card-sm" style={{ padding: '16px', cursor: 'pointer', textAlign: 'left', background: 'rgba(8, 5, 17, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>{t.name}</p>
                   <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{t.description}</p>
                   <p style={{ fontSize: '10px', color: '#475569', marginTop: '8px' }}>{t.fields.length} fields</p>
                 </button>
               ))}
             </div>
-            <button onClick={() => setShowTemplates(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={() => setShowTemplates(false)} className="btn-secondary" style={{ marginTop: '20px', width: '100%', justifyContent: 'center' }}>Cancel</button>
           </div>
         </div>
       )}
 
+      {/* Create Form */}
       {showForm && (
-        <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f1f5f9', marginBottom: '16px' }}>Create Content Type</h3>
+        <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>Create Content Type</h3>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Name" style={{ padding: '10px 12px', background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9', fontSize: '14px' }} required />
-              <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, '-') })} placeholder="Slug" style={{ padding: '10px 12px', background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9', fontSize: '14px' }} required />
+            <div className="grid-2" style={{ marginBottom: '16px' }}>
+              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Name" className="input-field" required />
+              <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, '-') })} placeholder="Slug" className="input-field" required />
             </div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <input value={fieldName} onChange={e => setFieldName(e.target.value)} placeholder="Field name" style={{ flex: 1, padding: '10px 12px', background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9', fontSize: '14px' }} />
-              <select value={fieldType} onChange={e => setFieldType(e.target.value)} style={{ padding: '10px 12px', background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9', fontSize: '14px' }}>
+              <input value={fieldName} onChange={e => setFieldName(e.target.value)} placeholder="Field name" className="input-field" style={{ flex: 1 }} />
+              <select value={fieldType} onChange={e => setFieldType(e.target.value)} className="select-field">
                 {['String', 'Number', 'Date', 'Boolean', 'RichText'].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button type="button" onClick={addField} style={{ padding: '10px 16px', background: '#1e293b', border: 'none', borderRadius: '8px', color: '#e2e8f0', cursor: 'pointer' }}>Add</button>
+              <button type="button" onClick={addField} className="btn-secondary" style={{ padding: '10px 16px' }}>Add</button>
             </div>
             {form.fields.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                 {form.fields.map((f, i) => (
-                  <span key={i} style={{ padding: '4px 10px', background: '#1e293b', borderRadius: '6px', fontSize: '12px', color: '#e2e8f0' }}>
+                  <span key={i} className="glass-card-sm" style={{ padding: '4px 10px', fontSize: '12px', color: '#e2e8f0', borderRadius: '8px' }}>
                     {f.name} <span style={{ color: '#64748b' }}>({f.type})</span>
                   </span>
                 ))}
               </div>
             )}
             <div style={{ display: 'flex', gap: '12px' }}>
-              <LoadingButton type="submit" loading={saving}>Create</LoadingButton>
-              <button type="button" onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: 'transparent', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}>Cancel</button>
+              <LoadingButton type="submit" loading={saving} className="btn-primary" style={{ border: 'none' }}>Create</LoadingButton>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ position: 'relative', maxWidth: '300px' }}>
-          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#475569' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search content types..." style={{ width: '100%', padding: '8px 12px 8px 36px', background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9', fontSize: '13px' }} />
-        </div>
-      </div>
+      {/* Search */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search content types..."
+        searchWidth="300px"
+        filters={[]}
+      />
 
+      {/* Content Types List */}
       {filtered.length === 0 ? (
-        <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '12px', padding: '60px', textAlign: 'center' }}>
-          <p style={{ color: '#94a3b8', marginBottom: '16px' }}>{search ? 'No matching content types' : 'No content types yet'}</p>
-          {!search && <button onClick={() => setShowForm(true)} style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #3b82f6, #6366f1)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: '600', cursor: 'pointer' }}>Create Content Type</button>}
+        <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
+          <p className="empty-state-text">{search ? 'No matching content types' : 'No content types yet'}</p>
+          {!search && <button onClick={() => setShowForm(true)} className="btn-primary">Create Content Type</button>}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        <div className="grid-auto-fill">
           {filtered.map((ct) => (
-            <div key={ct._id} style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px' }}>
+            <div key={ct._id} className="glass-card-sm" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Link to={`/content/${ct.slug}`} style={{ textDecoration: 'none' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f1f5f9' }}>{ct.name}</h3>
-                  <p style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', marginTop: '4px' }}>/{ct.slug}</p>
-                </Link>
-                <button onClick={() => handleDelete(ct._id)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer' }}><Trash2 style={{ width: '14px', height: '14px' }} /></button>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255, 126, 95, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', border: '1px solid rgba(255, 126, 95, 0.2)' }}>
+                  <Layers style={{ width: '16px', height: '16px', color: '#ff7e5f' }} />
+                </div>
+                <button onClick={() => handleDelete(ct._id)} className="btn-ghost" style={{ padding: '6px' }}>
+                  <Trash2 style={{ width: '14px', height: '14px' }} />
+                </button>
               </div>
+              <Link to={`/content/${ct.slug}`} style={{ textDecoration: 'none' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>{ct.name}</h3>
+                <p style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', marginTop: '4px' }}>/{ct.slug}</p>
+              </Link>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '12px' }}>{ct.fields.length} fields</p>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

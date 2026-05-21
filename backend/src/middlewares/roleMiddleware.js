@@ -1,59 +1,39 @@
-import User from '../models/user.js';
+const adminPermissions = {
+  contentTypes: true,
+  contentEntries: true,
+  apiKeys: true,
+  analytics: true,
+  auditLogs: true,
+  webhooks: true,
+  mediaLibrary: true,
+  userManagement: true,
+  systemSettings: true
+};
 
-const rolePermissions = {
-  user: {
-    contentTypes: true,
-    contentEntries: true,
-    apiKeys: true,
-    analytics: true,
-    auditLogs: false,
-    webhooks: false,
-    mediaLibrary: true,
-    userManagement: false,
-    systemSettings: false
-  },
-  subadmin: {
-    contentTypes: true,
-    contentEntries: true,
-    apiKeys: true,
-    analytics: true,
-    auditLogs: true,
-    webhooks: true,
-    mediaLibrary: true,
-    userManagement: false,
-    systemSettings: false
-  },
-  admin: {
-    contentTypes: true,
-    contentEntries: true,
-    apiKeys: true,
-    analytics: true,
-    auditLogs: true,
-    webhooks: true,
-    mediaLibrary: true,
-    userManagement: true,
-    systemSettings: true
-  }
+const memberPermissions = {
+  contentTypes: true,
+  contentEntries: true,
+  apiKeys: true,
+  analytics: false,
+  auditLogs: false,
+  webhooks: false,
+  mediaLibrary: true,
+  userManagement: false,
+  systemSettings: false
 };
 
 export const roleMiddleware = (requiredPermission) => {
   return async (req, res, next) => {
     try {
-      // If authenticated via API key, allow access (API keys have their own scope permissions)
       if (req.apiKey) {
         return next();
       }
 
-      // If authenticated via JWT token, check user roles
       if (req.user && req.user.id) {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: "User not found" });
-        if (!user.isActive) return res.status(403).json({ message: "Account disabled" });
+        const role = req.userRole || 'member';
+        const permissions = role === 'admin' ? adminPermissions : memberPermissions;
 
-        req.userRole = user.role;
-        req.userPermissions = user.permissions;
-
-        if (requiredPermission && !user.permissions[requiredPermission]) {
+        if (requiredPermission && !permissions[requiredPermission]) {
           return res.status(403).json({ message: "Insufficient permissions" });
         }
 
@@ -67,9 +47,4 @@ export const roleMiddleware = (requiredPermission) => {
   };
 };
 
-export const getRolePermissions = (role) => rolePermissions[role] || rolePermissions.user;
-
-export const applyDefaultPermissions = async (userId, role) => {
-  const permissions = getRolePermissions(role);
-  await User.findByIdAndUpdate(userId, { role, permissions });
-};
+export const getRolePermissions = (role) => role === 'admin' ? adminPermissions : memberPermissions;

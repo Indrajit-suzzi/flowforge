@@ -1,6 +1,5 @@
 import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
-import { getRolePermissions } from '../middlewares/roleMiddleware.js';
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -25,14 +24,12 @@ export const createUser = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const permissions = getRolePermissions(role || 'user');
 
         const user = await User.create({
             username,
             email,
             password: hashedPassword,
-            role: role || 'user',
-            permissions
+            role: role || 'member'
         });
 
         const { password: _password, ...safeUser } = user.toObject();
@@ -44,13 +41,9 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
-        const { role, permissions, isActive } = req.body;
+        const { role, isActive } = req.body;
         const updates = {};
-        if (role) {
-            updates.role = role;
-            updates.permissions = getRolePermissions(role);
-        }
-        if (permissions) updates.permissions = { ...permissions };
+        if (role) updates.role = role;
         if (isActive !== undefined) updates.isActive = isActive;
 
         const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true });

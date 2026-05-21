@@ -4,7 +4,6 @@ import fileUpload from 'express-fileupload';
 
 import dynamicRoutes from "./routes/dynamicRoutes.js";
 import contentTypeRoutes from "./routes/contentTypeRoutes.js";
-import authRoutes from './routes/authRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import auditLogRoutes from './routes/auditLogRoutes.js';
@@ -29,6 +28,15 @@ app.use(express.json());
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 app.use(rateLimit({ windowMs: 60 * 1000, max: 1000 }));
 
+const clerkSecret = process.env.CLERK_SECRET_KEY;
+if (clerkSecret && clerkSecret !== 'your_clerk_secret_key_here') {
+  const { clerkMiddleware } = await import('@clerk/express');
+  app.use(clerkMiddleware());
+  console.log('Clerk authentication enabled');
+} else {
+  console.log('Clerk not configured — using JWT fallback');
+}
+
 app.use("/api/v1/dynamic", authMiddleware, tenantMiddleware, roleMiddleware('contentEntries'), analyticsMiddleware, dynamicRoutes);
 app.use("/api/v1/content-types", authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), analyticsMiddleware, contentTypeRoutes);
 app.use("/api/v1/api-keys", authMiddleware, tenantMiddleware, roleMiddleware('apiKeys'), analyticsMiddleware, apiKeyRoutes);
@@ -38,7 +46,6 @@ app.use("/api/v1/webhooks", authMiddleware, roleMiddleware('webhooks'), webhookR
 app.use("/api/v1/media", authMiddleware, roleMiddleware('mediaLibrary'), mediaRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/docs", docsRoutes);
-app.use('/api/auth', authRoutes);
 
 app.get("/", (req, res) => {
   res.send("FlowForge API running 🚀");

@@ -7,31 +7,30 @@ A multi-tenant headless CMS with dynamic schema generation, API key management, 
 ### Core
 - **Dynamic Schema Generation** - Create content types on the fly with custom fields
 - **Multi-Tenant Architecture** - Isolated data per tenant with automatic scoping
-- **Role-Based Access Control** - Admin, SubAdmin, and User roles with granular permissions
+- **Role-Based Access Control** - Admin and Member roles with feature-level access
 - **API Key Management** - Scoped keys with read/write/delete permissions for external access
 - **Draft/Publish Workflow** - Content versioning with status tracking
 
 ### Dashboard
-- **Analytics** - API usage stats, top endpoints, period filtering
-- **Audit Logs** - Track all actions with user, action, and timestamp
+- **Analytics** - API usage stats, top endpoints, period filtering (Admin only)
+- **Audit Logs** - Track all actions with user, action, and timestamp (Admin only)
 - **Media Library** - Upload, filter, and manage media files
-- **Webhooks** - Trigger external endpoints on content events
+- **Webhooks** - Trigger external endpoints on content events (Admin only)
 - **Content Templates** - 8 pre-built schemas (Blog, Portfolio, E-commerce, etc.)
 - **Bulk Operations** - Select, publish, or delete multiple entries at once
 - **Search & Filter** - Quick search across entries and content types
+- **API Documentation** - Interactive docs with expandable endpoints, request/response examples
 
-### Security
-- JWT authentication for dashboard access
-- API key authentication for external integrations
-- Rate limiting on all endpoints
-- Input validation with Joi schemas
-- CORS configuration with header whitelisting
+### Authentication
+- **Clerk** - Modern auth with email, social login, and session management
+- **JWT Fallback** - Works without Clerk by setting `JWT_SECRET` only
+- **API Keys** - For external integrations and server-to-server calls
 
 ## Tech Stack
 
-- **Backend:** Node.js, Express 5, MongoDB (Mongoose), JWT, Joi
-- **Frontend:** React 19, Vite, React Router, Axios, Lucide Icons
-- **Styling:** Inline styles (dark theme, no external CSS frameworks)
+- **Backend:** Node.js, Express 5, MongoDB (Mongoose), Clerk, JWT, Joi
+- **Frontend:** React 19, Vite, React Router, Axios, Lucide Icons, Clerk
+- **Styling:** CSS variables + inline styles (dark theme, glass morphism)
 
 ## Project Structure
 
@@ -53,10 +52,10 @@ flowforge/
 │   └── docker-compose.yml
 ├── frontend/
 │   ├── src/
-│   │   ├── components/      # Navbar, loading states, rich text editor
-│   │   ├── context/         # Auth context with permissions
-│   │   ├── pages/           # Dashboard, content, settings, etc.
-│   │   └── utils/           # API client with auto-auth headers
+│   │   ├── components/      # Navbar, loading states, rich text editor, page shell
+│   │   ├── hooks/           # useRole (admin/member check)
+│   │   ├── pages/           # Landing, dashboard, content, settings, API docs, etc.
+│   │   └── utils/           # API client with Clerk token injection
 │   └── vite.config.js
 ├── docs/
 │   └── PRD.md               # Product requirements document
@@ -74,18 +73,22 @@ flowforge/
 
 ```bash
 cd backend
-cp .env.example .env  # or edit .env directly
 npm install
 npm run dev
 ```
 
-**Environment Variables:**
+**Environment Variables (backend/.env):**
 
 ```env
 PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/flowforge
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# Optional: Clerk authentication
+CLERK_SECRET_KEY=sk_test_...
 ```
+
+If `CLERK_SECRET_KEY` is not set, the backend automatically falls back to JWT authentication.
 
 ### Frontend
 
@@ -95,7 +98,14 @@ npm install
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and proxies `/api` requests to the backend.
+**Environment Variables (frontend/.env):**
+
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_API_URL=http://localhost:3000
+```
+
+The frontend runs on `http://localhost:5173`.
 
 ### Docker (Backend)
 
@@ -113,20 +123,39 @@ node seed.js
 
 Creates dummy users for testing:
 - `admin@flowforge.com` / `admin123` (Admin role)
-- `user@flowforge.com` / `user123` (User role)
+- `john@example.com` / `john123` (Member role)
+- `jane@example.com` / `jane123` (Member role)
+
+## Roles
+
+| Feature | Admin | Member |
+|---|---|---|
+| Dashboard | ✅ | ✅ |
+| Content Types | ✅ | ✅ |
+| Content Entries | ✅ | ✅ |
+| Media Library | ✅ | ✅ |
+| API Keys | ✅ | ✅ |
+| API Docs | ✅ | ✅ |
+| Analytics | ✅ | ❌ |
+| Audit Logs | ✅ | ❌ |
+| Webhooks | ✅ | ❌ |
+| User Management | ✅ | ❌ |
 
 ## API Usage
 
 ### Authentication
 
-**JWT (Dashboard):**
-```
-Authorization: Bearer <token>
-```
+**Clerk Session (Dashboard):**
+Automatic — tokens are injected via the Clerk React SDK.
 
 **API Key (External):**
 ```
 X-API-Key: flow_xxxxx...
+```
+
+**JWT (Fallback):**
+```
+Authorization: Bearer <token>
 ```
 
 ### Quick Start
@@ -146,7 +175,6 @@ const posts = await response.json();
 
 | Category | Routes |
 |---|---|
-| Auth | `/api/auth/register`, `/api/auth/login` |
 | Content Types | `/api/v1/content-types`, `/api/v1/content-types/templates` |
 | Dynamic Content | `/api/v1/dynamic/:slug` |
 | API Keys | `/api/v1/api-keys` |

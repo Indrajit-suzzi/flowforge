@@ -1,21 +1,18 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
-import { getRolePermissions } from "../middlewares/roleMiddleware.js";
 
 export const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const permissions = getRolePermissions('user');
 
     const user = await User.create({
       username,
       email,
       password: hashedPassword,
-      role: 'user',
-      permissions
+      role: 'member'
     });
 
     const { password: _password, ...safeUser } = user.toObject();
