@@ -310,9 +310,9 @@ export default function Landing() {
 
   // Parallax background blobs
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
-  const y2 = useTransform(scrollY, [0, 1000], [0, -150]);
-  const y3 = useTransform(scrollY, [0, 2000], [0, 300]);
+  const y1 = useTransform(scrollY, [0, 1000], [0, 200], { clamp: false });
+  const y2 = useTransform(scrollY, [0, 1000], [0, -150], { clamp: false });
+  const y3 = useTransform(scrollY, [0, 2000], [0, 300], { clamp: false });
 
   const gridRotateX = useTransform(scrollY, [0, 1000], [75, 82]);
   const orbScale = useTransform(scrollY, [0, 800], [1, 1.15]);

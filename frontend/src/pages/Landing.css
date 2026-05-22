@@ -57,6 +57,7 @@
   pointer-events: none;
   z-index: 0;
   mix-blend-mode: screen;
+  animation: float-slow 20s ease-in-out infinite alternate;
 }
 
 .glow-peach {
@@ -102,6 +103,7 @@
   pointer-events: none;
   z-index: 0;
   animation: grid-scroll 25s linear infinite;
+  will-change: transform;
 }
 
 /* Glassmorphism Navigation */
