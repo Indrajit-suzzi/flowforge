@@ -314,6 +314,10 @@ export default function Landing() {
   const y2 = useTransform(scrollY, [0, 1000], [0, -150]);
   const y3 = useTransform(scrollY, [0, 2000], [0, 300]);
 
+  const gridRotateX = useTransform(scrollY, [0, 1000], [75, 82]);
+  const orbScale = useTransform(scrollY, [0, 800], [1, 1.15]);
+  const orbRotate = useTransform(scrollY, [0, 800], [0, 10]);
+
   // Track page scroll to toggle header styling
   useEffect(() => {
     const handleScroll = () => {
@@ -421,7 +425,7 @@ Headers: {
       
       {/* Background grids */}
       <div className="grid-overlay" />
-      <div className="grid-3d-floor" />
+      <motion.div className="grid-3d-floor" style={{ rotateX: gridRotateX }} />
 
       {/* HEADER NAVIGATION */}
       <header className={`glass-header ${scrolled ? 'scrolled' : ''}`}>
@@ -499,8 +503,14 @@ Headers: {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
+              style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                position: 'relative',
+                scale: orbScale,
+                rotate: orbRotate
+              }}
               transition={{ duration: 1, delay: 0.2 }}
-              style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}
             >
               <div style={{ position: 'absolute', top: '10%', left: '15%', width: '320px', height: '320px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
               <InteractiveOrb />
@@ -569,9 +579,9 @@ Headers: {
             {features.map((feat, idx) => (
               <motion.div
                 key={feat.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial={{ opacity: 0, y: 50, rotateX: 10, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
               >
                 <TiltCard style={{ padding: '40px 30px', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -600,9 +610,9 @@ Headers: {
             
             {/* Left: Terminal Description */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 0, x: -30, rotateX: 10, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, rotateX: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.7 }}
             >
               <span className="landing-font-heading" style={{ fontSize: '12px', fontWeight: '700', color: '#ff7e5f', textTransform: 'uppercase', letterSpacing: '1.5px', background: 'rgba(255, 126, 95, 0.08)', padding: '6px 14px', border: '1px solid rgba(255, 126, 95, 0.2)', borderRadius: '20px' }}>
@@ -631,9 +641,9 @@ Headers: {
 
             {/* Right: Premium Interactive Terminal */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 0, x: 30, rotateX: 10, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, rotateX: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.7 }}
             >
               <div className="terminal-window">
@@ -762,9 +772,9 @@ Headers: {
             ].map((workflow, idx) => (
               <motion.div
                 key={workflow.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial={{ opacity: 0, y: 50, rotateX: 10, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
                 style={{ position: 'relative' }}
               >

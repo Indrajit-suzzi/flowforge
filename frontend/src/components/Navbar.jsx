@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, LayoutDashboard, Layers, Key, BarChart3, FileText, Webhook, Image, Users, Settings, User, Book, ChevronDown, LogOut } from 'lucide-react';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useRole } from '../hooks/useRole';
@@ -182,34 +183,34 @@ export default function Navbar() {
             }} />
           </button>
 
-          {userMenuOpen && (
-            <div style={{ 
-              position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-              width: '240px',
-              background: 'rgba(12, 8, 22, 0.96)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '18px',
-              padding: '8px',
-              boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 40px rgba(139,92,246,0.08)',
-              opacity: 0,
-              transform: 'translateY(-8px)',
-              animation: 'dropdown-enter 0.2s forwards ease-out'
-            }}>
-              <style>{`
-                @keyframes dropdown-enter {
-                  to { opacity: 1; transform: translateY(0); }
-                }
-              `}</style>
-              <div style={{ 
-                padding: '14px 16px', 
-                marginBottom: '4px', 
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
+          <AnimatePresence>
+            {userMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20, rotateX: -15, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, rotateX: -15, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                style={{ 
+                  position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                  width: '240px',
+                  background: 'rgba(12, 8, 22, 0.96)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '18px',
+                  padding: '8px',
+                  boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 40px rgba(139,92,246,0.08)',
+                  transformOrigin: 'top right'
+                }}
+              >
+                <div style={{ 
+                  padding: '14px 16px', 
+                  marginBottom: '4px', 
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
                 <div style={{ 
                   width: '40px', height: '40px', borderRadius: '50%',
                   background: 'linear-gradient(135deg, #ff7e5f, #feb47b)',
@@ -285,10 +286,11 @@ export default function Navbar() {
                   <LogOut style={{ width: '14px', height: '14px' }} /> Sign out
                 </button>
               </div>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
-    </nav>
+    </div>
+  </nav>
   );
 }
