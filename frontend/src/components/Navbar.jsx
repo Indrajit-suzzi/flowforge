@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Zap, LayoutDashboard, Layers, Key, BarChart3, FileText, Webhook, Image, Users, Settings, User, Book, ChevronDown, LogOut, Shield } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Zap, LayoutDashboard, Layers, Key, BarChart3, FileText, Webhook, Image, Users, Settings, User, Book, ChevronDown, LogOut } from 'lucide-react';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useRole } from '../hooks/useRole';
 
@@ -20,7 +20,6 @@ export default function Navbar() {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { isAdmin } = useRole();
-  const navigate = useNavigate();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -57,17 +56,14 @@ export default function Navbar() {
       top: 0, 
       zIndex: 100, 
       background: scrolled 
-        ? 'rgba(8, 5, 17, 0.92)' 
-        : 'rgba(8, 5, 17, 0.75)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+        ? 'rgba(8, 5, 17, 0.8)' 
+        : 'transparent',
+      backdropFilter: scrolled ? 'blur(16px)' : 'none',
+      WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
       borderBottom: scrolled 
-        ? '1px solid rgba(255, 126, 95, 0.10)' 
-        : '1px solid rgba(255, 255, 255, 0.06)',
-      boxShadow: scrolled 
-        ? '0 10px 40px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.03)'
-        : '0 4px 20px -10px rgba(0, 0, 0, 0.3)',
-      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+        ? '1px solid rgba(255, 255, 255, 0.08)' 
+        : '1px solid transparent',
+      transition: 'all 0.3s ease'
     }}>
       <div style={{ 
         maxWidth: '1400px', 
@@ -77,9 +73,9 @@ export default function Navbar() {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+        transition: 'height 0.3s ease'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             <div style={{ 
               width: '32px', height: '32px', borderRadius: '10px', 
@@ -103,60 +99,39 @@ export default function Navbar() {
               WebkitTextFillColor: 'transparent'
             }}>FlowForge</span>
           </Link>
-          <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '3px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', padding: '4px' }}>
             {navLinks.map((link) => (
               <Link 
                 key={link.to} 
                 to={link.to} 
-                title={link.label}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  justifyContent: 'center', 
-                  width: '36px', 
-                  height: '36px',
-                  fontSize: '12px', 
+                  gap: '8px',
+                  padding: '6px 12px',
+                  fontSize: '13px', 
                   fontWeight: '500',
-                  color: isActive(link.to) ? '#f8fafc' : '#64748b',
-                  background: isActive(link.to) 
-                    ? 'linear-gradient(135deg, rgba(255, 126, 95, 0.15), rgba(139, 92, 246, 0.10))' 
-                    : 'transparent',
-                  border: isActive(link.to) 
-                    ? '1px solid rgba(255, 126, 95, 0.2)' 
-                    : '1px solid transparent',
+                  color: isActive(link.to) ? '#fff' : '#94a3b8',
+                  background: isActive(link.to) ? 'rgba(255,255,255,0.08)' : 'transparent',
                   borderRadius: '10px',
                   textDecoration: 'none',
-                  transition: 'all 0.25s ease',
-                  position: 'relative'
+                  transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => { 
                   if (!isActive(link.to)) { 
                     e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; 
-                    e.currentTarget.style.color = '#e2e8f0'; 
-                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.color = '#fff'; 
                   } 
                 }}
                 onMouseLeave={(e) => { 
                   if (!isActive(link.to)) { 
                     e.currentTarget.style.background = 'transparent'; 
-                    e.currentTarget.style.color = '#64748b';
-                    e.currentTarget.style.transform = 'translateY(0px)';
+                    e.currentTarget.style.color = '#94a3b8';
                   } 
                 }}
               >
-                <link.icon style={{ width: '17px', height: '17px' }} />
-                {isActive(link.to) && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: '-4px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '14px',
-                    height: '2px',
-                    borderRadius: '1px',
-                    background: 'linear-gradient(90deg, #ff7e5f, #8b5cf6)',
-                  }} />
-                )}
+                <link.icon style={{ width: '16px', height: '16px' }} />
+                <span>{link.label}</span>
               </Link>
             ))}
           </div>
