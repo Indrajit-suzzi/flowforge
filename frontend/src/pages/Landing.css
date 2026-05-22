@@ -61,12 +61,10 @@
 
 .glow-peach {
   background: radial-gradient(circle, rgba(255, 126, 95, 0.25) 0%, rgba(254, 180, 123, 0.05) 70%, transparent 100%);
-  animation: float-slow 12s ease-in-out infinite alternate;
 }
 
 .glow-purple {
   background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(79, 70, 229, 0.05) 70%, transparent 100%);
-  animation: float-slow 18s ease-in-out infinite alternate-reverse;
 }
 
 /* Interactive 3D Perspective Grid */

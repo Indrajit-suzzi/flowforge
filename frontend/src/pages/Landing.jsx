@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   ArrowRight, CheckCircle, Zap, Code, Key, Layers, 
   Shield, LayoutDashboard, Server, Globe, Terminal, 
@@ -308,6 +308,12 @@ export default function Landing() {
   const [mouseGlowPos, setMouseGlowPos] = useState({ x: 0, y: 0 });
   const featureSectionRef = useRef(null);
 
+  // Parallax background blobs
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
+  const y2 = useTransform(scrollY, [0, 1000], [0, -150]);
+  const y3 = useTransform(scrollY, [0, 2000], [0, 300]);
+
   // Track page scroll to toggle header styling
   useEffect(() => {
     const handleScroll = () => {
@@ -409,9 +415,9 @@ Headers: {
   return (
     <div className="landing-container">
       {/* Decorative Blur Blobs */}
-      <div className="glow-blob glow-peach" style={{ top: '10%', left: '5%', width: '400px', height: '400px' }} />
-      <div className="glow-blob glow-purple" style={{ top: '25%', right: '5%', width: '450px', height: '450px' }} />
-      <div className="glow-blob glow-peach" style={{ bottom: '20%', left: '15%', width: '500px', height: '500px' }} />
+      <motion.div className="glow-blob glow-peach" style={{ top: '10%', left: '5%', width: '400px', height: '400px', y: y1 }} />
+      <motion.div className="glow-blob glow-purple" style={{ top: '25%', right: '5%', width: '450px', height: '450px', y: y2 }} />
+      <motion.div className="glow-blob glow-peach" style={{ bottom: '20%', left: '15%', width: '500px', height: '500px', y: y3 }} />
       
       {/* Background grids */}
       <div className="grid-overlay" />
