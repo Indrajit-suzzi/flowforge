@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, Clock, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
+import { User, Mail, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, CheckCircle, XCircle } from 'lucide-react';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useLocalAuth } from '../contexts/AuthContext';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import api from '../utils/api';
 
 export default function Profile() {
-  const { user, isLoaded } = useUser();
+  const current = useCurrentUser();
+  const localAuth = useLocalAuth();
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ username: '', email: '' });
@@ -16,19 +18,16 @@ export default function Profile() {
   const [loadingActivity, setLoadingActivity] = useState(true);
 
   useEffect(() => {
-    if (isLoaded && user) {
-      setForm({
-        username: user.firstName || user.username || '',
-        email: user.primaryEmailAddress?.emailAddress || '',
-      });
+    if (current.isLoaded && current.user) {
+      setForm({ username: current.displayName, email: current.email });
       loadActivity();
       loadStats();
     }
-  }, [isLoaded, user]);
+  }, [current.isLoaded, current.user]);
 
   const loadActivity = async () => {
     try {
-      const { data } = await api.get(`/api/v1/audit-logs?limit=20&userId=${user.id}`);
+      const { data } = await api.get(`/api/v1/audit-logs?limit=20&userId=${current.userId}`);
       setActivities(data.logs || []);
     } catch { /* ignore */ }
     setLoadingActivity(false);
@@ -36,20 +35,13 @@ export default function Profile() {
 
   const loadStats = async () => {
     try {
-      const cts = await api.get('/api/v1/content-types').then(r => r.data || []);
-      let totalEntries = 0;
-      for (const ct of cts) {
-        try {
-          const r = await api.get(`/api/v1/dynamic/${ct.slug}?limit=0`);
-          totalEntries += (r.data || []).length;
-        } catch { /* ignore */ }
-      }
-      const role = user.publicMetadata?.role || 'member';
+      const { data: cts } = await api.get('/api/v1/content-types');
+      const { data: statsData } = await api.get('/api/v1/stats');
       setStats({
-        contentTypes: cts.length,
-        entries: totalEntries,
-        role,
-        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'
+        contentTypes: cts?.length || 0,
+        entries: statsData?.totalEntries || 0,
+        role: current.user?.publicMetadata?.role || localAuth.user?.role || 'member',
+        memberSince: current.user?.createdAt ? new Date(current.user.createdAt).toLocaleDateString() : localAuth.user?.createdAt ? new Date(localAuth.user.createdAt).toLocaleDateString() : 'N/A',
       });
     } catch { /* ignore */ }
   };
@@ -57,7 +49,11 @@ export default function Profile() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await user.update({ firstName: form.username });
+      if (current.isClerk) {
+        await current.user.update({ firstName: form.username });
+      } else {
+        await api.put('/api/v1/users/me', { username: form.username });
+      }
       setMessage('Profile updated');
       setEditing(false);
     } catch (err) {
@@ -84,7 +80,7 @@ export default function Profile() {
     return <Icon style={{ width: '12px', height: '12px' }} />;
   };
 
-  if (!isLoaded) return <div style={{ padding: '32px', color: '#64748b' }}>Loading profile...</div>;
+  if (!current.isLoaded) return <div style={{ padding: '32px', color: '#64748b' }}>Loading profile...</div>;
 
   return (
     <PageShell
