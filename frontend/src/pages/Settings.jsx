@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette, RotateCcw } from 'lucide-react';
+import { FileText, Bell, Shield, Download, Sparkles, Palette, RotateCcw } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -31,7 +31,6 @@ function ConfirmDialog({ open, title, message, confirmLabel, confirmClass, onCon
 
 export default function Settings() {
   const [notifications, setNotifications] = useState({ email: true, webhook: false });
-  const [language, setLanguage] = useState('en');
   const [theme, setTheme] = useState({ primaryColor: '#ff7e5f', accentColor: '#8b5cf6', borderRadius: 12, fontFamily: 'Outfit', logoUrl: '', customCss: '' });
   const [savingTheme, setSavingTheme] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
@@ -42,7 +41,6 @@ export default function Settings() {
   useEffect(() => {
     api.get('/api/v1/users/me').then(r => {
       const p = r.data.preferences || {};
-      if (p.language) setLanguage(p.language);
       if (p.notifications) setNotifications({ email: true, webhook: false, ...p.notifications });
     }).catch(() => {});
     api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
@@ -51,7 +49,7 @@ export default function Settings() {
   const savePreferences = async () => {
     setSavingPrefs(true);
     try {
-      await api.put('/api/v1/users/me', { preferences: { language, notifications } });
+      await api.put('/api/v1/users/me', { preferences: { notifications } });
     } finally {
       setSavingPrefs(false);
     }
@@ -146,28 +144,7 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Language */}
-      <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
-        <div className="section-heading" style={{ marginBottom: '24px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-            <Globe style={{ width: '15px', height: '15px', color: '#8b5cf6' }} />
-          </div>
-          Language & Region
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Interface Language</label>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <select value={language} onChange={e => setLanguage(e.target.value)} className="select-field" style={{ maxWidth: '300px' }}>
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="ja">Japanese</option>
-            </select>
-            <button onClick={() => api.put('/api/v1/users/me', { preferences: { language, notifications } })} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '12px' }}>Apply</button>
-          </div>
-        </div>
-      </div>
+
 
       {/* Branding */}
       <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>

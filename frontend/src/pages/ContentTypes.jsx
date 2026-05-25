@@ -142,7 +142,7 @@ export default function ContentTypes() {
                 />
               </div>
             </div>
-            <div style={{ overflow: 'auto', flex: 1 }}>
+            <div className="scrollbar-dark" style={{ overflow: 'auto', flex: 1 }}>
               <div className="grid-auto-fill" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
                 {templates.filter(t => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()) || t.slug.toLowerCase().includes(templateSearch.toLowerCase()) || t.description.toLowerCase().includes(templateSearch.toLowerCase())).map(t => {
                   const required = t.fields.filter(f => f.required).length;
