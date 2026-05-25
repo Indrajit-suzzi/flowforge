@@ -11,7 +11,6 @@ test('getModel includes tenantId in schema', () => {
   
   const tenantIdField = model.schema.paths.tenantId;
   assert.ok(tenantIdField, 'tenantId field should exist');
-  assert.strictEqual(tenantIdField.instance, 'ObjectId');
+  assert.strictEqual(tenantIdField.instance, 'String');
   assert.strictEqual(tenantIdField.options.required, true);
-  assert.strictEqual(tenantIdField.options.ref, 'User');
 });

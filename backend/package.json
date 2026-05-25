@@ -8,7 +8,7 @@
     "seed": "node seed.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "node --test src/models/genericModel.test.js"
+    "test": "node --test src/models/genericModel.test.js src/utils/validationSchemas.test.js src/middlewares/sanitize.test.js src/utils/envValidation.test.js"
   },
   "keywords": [],
   "author": "",
