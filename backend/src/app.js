@@ -99,6 +99,28 @@ app.use("/api/v1/comments", authMiddleware, keyRateLimit(), tenantMiddleware, co
 app.use("/api/v1/tags", authMiddleware, keyRateLimit(), tenantMiddleware, tagRoutes);
 app.use("/api/v1/docs", docsRoutes);
 
+// OpenAPI spec
+import { readFileSync } from 'fs';
+const openApiSpec = JSON.parse(readFileSync(new URL('./docs/openapi.json', import.meta.url), 'utf-8'));
+app.get("/api/v1/openapi.json", (req, res) => {
+  res.json(openApiSpec);
+});
+app.get("/api/v1/docs/swagger", (req, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><title>FlowForge API Docs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+<style>body{margin:0}html{background:#080511}</style></head>
+<body><div id="swagger"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+SwaggerUIBundle({url:'/api/v1/openapi.json',dom_id:'#swagger',
+presets:[SwaggerUIBundle.presets.apis],
+layout:SwaggerUIBundle.layouts.BaseLayout,
+deepLinking:true})
+</script></body></html>`);
+});
+
 app.get("/api/v1/health", async (req, res) => {
   try {
     const mongoose = (await import('mongoose')).default;

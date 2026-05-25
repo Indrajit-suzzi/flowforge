@@ -1,29 +1,31 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import Landing from './pages/Landing';
-import Dashboard from './pages/Dashboard';
-import ContentTypes from './pages/ContentTypes';
-import ContentEntries from './pages/ContentEntries';
-import ApiKeys from './pages/ApiKeys';
-import Analytics from './pages/Analytics';
-import AuditLogs from './pages/AuditLogs';
-import Webhooks from './pages/Webhooks';
-import MediaLibrary from './pages/MediaLibrary';
-import UsersRoles from './pages/UsersRoles';
-import Roles from './pages/Roles';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import ApiDocs from './pages/ApiDocs';
-import SearchResults from './pages/SearchResults';
-import Forms from './pages/Forms';
-import Tags from './pages/Tags';
-import ContentCalendar from './pages/ContentCalendar';
 import TenantThemeProvider from './components/TenantThemeProvider';
 import { useRole } from './hooks/useRole';
 import { setAuthTokenGetter } from './utils/api';
+
+const Landing = lazy(() => import('./pages/Landing'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ContentTypes = lazy(() => import('./pages/ContentTypes'));
+const ContentEntries = lazy(() => import('./pages/ContentEntries'));
+const ApiKeys = lazy(() => import('./pages/ApiKeys'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const Webhooks = lazy(() => import('./pages/Webhooks'));
+const MediaLibrary = lazy(() => import('./pages/MediaLibrary'));
+const UsersRoles = lazy(() => import('./pages/UsersRoles'));
+const Roles = lazy(() => import('./pages/Roles'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const ApiDocs = lazy(() => import('./pages/ApiDocs'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
+const Forms = lazy(() => import('./pages/Forms'));
+const Tags = lazy(() => import('./pages/Tags'));
+const ContentCalendar = lazy(() => import('./pages/ContentCalendar'));
 
 function AuthTokenBridge() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -130,10 +132,24 @@ function SignUpPage() {
   );
 }
 
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{
+        width: '32px', height: '32px', borderRadius: '50%',
+        border: '3px solid rgba(255,126,95,0.2)', borderTopColor: '#ff7e5f',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{'@keyframes spin { to { transform: rotate(360deg) } }'}</style>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <>
       <AuthTokenBridge />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
         <Route path="/sign-in/*" element={<ErrorBoundary><SignInPage /></ErrorBoundary>} />
@@ -156,6 +172,7 @@ export default function App() {
         <Route path="/profile" element={<><SignedIn><Layout><Profile /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/settings" element={<><SignedIn><Layout><Settings /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
       </Routes>
+      </Suspense>
     </>
   );
 }

@@ -1,41 +1,27 @@
-const stripNested = (obj) => {
+const DANGEROUS_KEYS = ['$where', '$regex', '$ne', '$gt', '$lt', '$gte', '$lte', '$in', '$nin', '$exists'];
+
+const hasDangerousKeys = (obj) => {
   if (typeof obj === 'string') {
-    return obj
-      .replace(/\$where/g, '')
-      .replace(/\$regex/g, '')
-      .replace(/\$ne/g, '')
-      .replace(/\$gt/g, '')
-      .replace(/\$lt/g, '')
-      .replace(/\$gte/g, '')
-      .replace(/\$lte/g, '')
-      .replace(/\$in/g, '')
-      .replace(/\$nin/g, '')
-      .replace(/\$exists/g, '')
-      .trim();
+    return DANGEROUS_KEYS.some(k => obj.includes(k));
   }
   if (Array.isArray(obj)) {
-    return obj.map(stripNested);
+    return obj.some(hasDangerousKeys);
   }
   if (obj && typeof obj === 'object') {
-    const sanitized = {};
-    for (const [key, value] of Object.entries(obj)) {
-      if (key.startsWith('$')) continue;
-      sanitized[key] = stripNested(value);
+    for (const key of Object.keys(obj)) {
+      if (key.startsWith('$')) return true;
+      if (hasDangerousKeys(obj[key])) return true;
     }
-    return sanitized;
   }
-  return obj;
+  return false;
 };
 
-const sanitize = (req, _res, next) => {
-  if (req.body && typeof req.body === 'object') {
-    req.body = stripNested(req.body);
+const sanitize = (req, res, next) => {
+  if (hasDangerousKeys(req.body)) {
+    return res.status(400).json({ error: 'Request body contains forbidden MongoDB operators' });
   }
-  if (req.query && typeof req.query === 'object') {
-    req.query = stripNested(req.query);
-  }
-  if (req.params && typeof req.params === 'object') {
-    req.params = stripNested(req.params);
+  if (hasDangerousKeys(req.query)) {
+    return res.status(400).json({ error: 'Query contains forbidden MongoDB operators' });
   }
   next();
 };
