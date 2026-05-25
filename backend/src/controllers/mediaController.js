@@ -51,9 +51,16 @@ export const getAll = async (req, res) => {
         const { type } = req.query;
         const filter = { tenantId: req.tenant };
         if (type) filter.type = type;
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const skip = (page - 1) * limit;
         
-        const media = await Media.find(filter).sort({ createdAt: -1 });
-        res.json(media);
+        const [media, total] = await Promise.all([
+            Media.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Media.countDocuments(filter)
+        ]);
+        res.json({ data: media, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

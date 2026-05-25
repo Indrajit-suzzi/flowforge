@@ -3,8 +3,17 @@ import bcrypt from 'bcryptjs';
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
-        res.json(users);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const skip = (page - 1) * limit;
+        const filter = {};
+        if (req.query.role) filter.role = req.query.role;
+        if (req.query.search) filter.$or = [{ username: { $regex: req.query.search, $options: 'i' } }, { email: { $regex: req.query.search, $options: 'i' } }];
+        const [users, total] = await Promise.all([
+            User.find(filter, { password: 0 }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            User.countDocuments(filter)
+        ]);
+        res.json({ data: users, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

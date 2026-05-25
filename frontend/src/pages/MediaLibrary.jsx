@@ -3,18 +3,25 @@ import { Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon }
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
+import Pagination from '../components/Pagination';
 
 const typeIcons = { image: Image, document: FileText, video: Video, audio: Music, other: FileText };
 
 export default function MediaLibrary() {
   const [media, setMedia] = useState([]);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [copied, setCopied] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { 
-    api.get(`/api/v1/media${filter ? `?type=${filter}` : ''}`).then(r => { setMedia(r.data || []); }).catch(() => {}); 
-  }, [filter]);
+    api.get(`/api/v1/media?page=${page}${filter ? `&type=${filter}` : ''}`).then(r => { 
+      const resp = r.data || { data: [], total: 0, page: 1, totalPages: 1 };
+      setMedia(resp.data || resp || []);
+      if (resp.totalPages) setTotalPages(resp.totalPages);
+    }).catch(() => {}); 
+  }, [filter, page]);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -24,8 +31,8 @@ export default function MediaLibrary() {
     formData.append('file', file);
 
     await api.post('/api/v1/media', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    const r = await api.get('/api/v1/media');
-    setMedia(r.data || []);
+    const r = await api.get(`/api/v1/media?page=${page}`);
+    setMedia(r.data?.data || r.data || []);
   };
 
   const handleDelete = async (id) => {
@@ -44,7 +51,7 @@ export default function MediaLibrary() {
     <>
       <div className="filter-group">
         {['', 'image', 'document', 'video', 'audio'].map(t => (
-          <button key={t} onClick={() => setFilter(t)} className={`filter-btn ${filter === t ? 'active' : ''}`}>{t || 'All'}</button>
+          <button key={t} onClick={() => { setFilter(t); setPage(1); }} className={`filter-btn ${filter === t ? 'active' : ''}`}>{t || 'All'}</button>
         ))}
       </div>
       <button onClick={() => fileInputRef.current?.click()} className="btn-primary" style={{ padding: '9px 18px', fontSize: '13px' }}>
@@ -104,6 +111,7 @@ export default function MediaLibrary() {
           })}
         </div>
       )}
+      <Pagination page={page} totalPages={totalPages} onChange={p => { setPage(p); }} />
     </PageShell>
   );
 }

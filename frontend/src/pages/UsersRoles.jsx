@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Shield, User, Ban, Edit2, Users } from 'lucide-react';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
+import Pagination from '../components/Pagination';
 import { useRole } from '../hooks/useRole';
 
 const defaultRoleColors = [
@@ -20,16 +21,19 @@ export default function UsersRoles() {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'member' });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     Promise.all([
-      api.get('/api/v1/users').then(r => r.data || []).catch(() => []),
+      api.get(`/api/v1/users?page=${page}`).then(r => r.data || { data: [], total: 0, page: 1, totalPages: 1 }).catch(() => ({ data: [], total: 0, page: 1, totalPages: 1 })),
       api.get('/api/v1/roles').then(r => r.data || []).catch(() => [])
-    ]).then(([usersData, rolesData]) => {
-      setUsers(usersData);
+    ]).then(([usersResp, rolesData]) => {
+      setUsers(usersResp.data || usersResp || []);
+      if (usersResp.totalPages) setTotalPages(usersResp.totalPages);
       setRoles(rolesData);
     });
-  }, []);
+  }, [page]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,6 +148,7 @@ export default function UsersRoles() {
           );
         })}
       </div>
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
     </div>
   );
 }

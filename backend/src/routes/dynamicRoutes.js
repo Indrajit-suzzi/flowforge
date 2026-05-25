@@ -129,16 +129,24 @@ router.get('/:modelName', cacheControl, async (req, res) => {
     } else {
       filter.isDeleted = { $ne: true };
     }
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
     
-    let data = await Model.find(filter).sort({ createdAt: -1 });
-    data = data.map(e => { const o = e.toObject(); const p = !!o.accessPassword; delete o.accessPassword; delete o.notes; return { ...o, passwordProtected: p }; });
+    const [total, docs] = await Promise.all([
+      Model.countDocuments(filter),
+      Model.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
+    ]);
+    
+    let data = docs.map(e => { const o = e.toObject(); const p = !!o.accessPassword; delete o.accessPassword; delete o.notes; return { ...o, passwordProtected: p }; });
     if (req.query.locale) {
       data = data.map(e => applyLocale(e, req.query.locale));
     }
     if (req.query.populate === 'true') {
       data = await populateReferences(data, ct);
     }
-    res.json(data);
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

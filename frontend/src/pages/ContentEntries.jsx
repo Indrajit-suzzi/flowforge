@@ -12,6 +12,7 @@ import VersionHistory from '../components/VersionHistory';
 import TranslationEditor from '../components/TranslationEditor';
 import EntryComments from '../components/EntryComments';
 import { useEntryLock } from '../hooks/useEntryLock';
+import Pagination from '../components/Pagination';
 
 export default function ContentEntries() {
   const { slug } = useParams();
@@ -28,6 +29,8 @@ export default function ContentEntries() {
   const [versionEntry, setVersionEntry] = useState(null);
   const [translateEntry, setTranslateEntry] = useState(null);
   const [commentEntry, setCommentEntry] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [showImport, setShowImport] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [bulkEditForm, setBulkEditForm] = useState({});
@@ -49,15 +52,17 @@ export default function ContentEntries() {
     const trashParam = showTrash ? 'trash=true' : '';
     const statusParam = statusFilter ? `status=${statusFilter}` : '';
     const tagParam = tagFilter ? `tag=${tagFilter}` : '';
-    const params = [trashParam, statusParam, tagParam].filter(Boolean).join('&');
+    const pageParam = `page=${page}`;
+    const params = [trashParam, statusParam, tagParam, pageParam].filter(Boolean).join('&');
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data),
-      api.get(`/api/v1/dynamic/${slug}${params ? `?${params}` : ''}`).then(r => r.data).catch(() => []),
+      api.get(`/api/v1/dynamic/${slug}${params ? `?${params}` : ''}`).then(r => r.data).catch(() => ({ data: [], total: 0, page: 1, totalPages: 1 })),
       api.get('/api/v1/tags').then(r => r.data).catch(() => [])
-    ]).then(([cts, ents, tags]) => {
+    ]).then(([cts, resp, tags]) => {
       const ct = cts?.find(c => c.slug === slug);
       setContentType(ct);
-      setEntries(ents || []);
+      setEntries((resp.data || resp) || []);
+      if (resp.totalPages) setTotalPages(resp.totalPages);
       setAllTags(tags || []);
       if (ct) {
         const initialForm = { status: 'draft', locale: ct.locales?.[0] || 'en', scheduledPublishAt: '', scheduledUnpublishAt: '', accessPassword: '', notes: '', tags: [] };
@@ -67,7 +72,7 @@ export default function ContentEntries() {
         const refFields = ct.fields.filter(f => f.type === 'Reference' && f.refContentType);
         if (refFields.length > 0) {
           Promise.all(refFields.map(f =>
-            api.get(`/api/v1/dynamic/${f.refContentType}`).then(r => ({ slug: f.refContentType, data: r.data || [] })).catch(() => ({ slug: f.refContentType, data: [] }))
+            api.get(`/api/v1/dynamic/${f.refContentType}`).then(r => ({ slug: f.refContentType, data: r.data?.data || r.data || [] })).catch(() => ({ slug: f.refContentType, data: [] }))
           )).then(results => {
             const map = {};
             results.forEach(r => { map[r.slug] = r.data; });
@@ -76,7 +81,7 @@ export default function ContentEntries() {
         }
       }
     }).finally(() => setLoading(false));
-  }, [slug, statusFilter, showTrash, tagFilter]);
+  }, [slug, statusFilter, showTrash, tagFilter, page]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,7 +96,7 @@ export default function ContentEntries() {
       setShowForm(false);
       setEditingEntry(null);
       const r = await api.get(`/api/v1/dynamic/${slug}`);
-      setEntries(r.data || []);
+      setEntries(r.data?.data || r.data || []);
     } finally {
       setSaving(false);
     }
@@ -101,7 +106,7 @@ export default function ContentEntries() {
     const action = entry.status === 'published' ? 'unpublish' : 'publish';
     await api.patch(`/api/v1/dynamic/${slug}/${entry._id}/${action}`);
     const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data || []);
+    setEntries(r.data?.data || r.data || []);
   };
 
   const bulkDelete = async () => {
@@ -111,7 +116,7 @@ export default function ContentEntries() {
     }
     setSelected([]);
     const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data || []);
+    setEntries(r.data?.data || r.data || []);
   };
 
   const bulkPublish = async () => {
@@ -120,7 +125,7 @@ export default function ContentEntries() {
     }
     setSelected([]);
     const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data || []);
+    setEntries(r.data?.data || r.data || []);
   };
 
   const startEdit = async (entry) => {
@@ -239,7 +244,7 @@ export default function ContentEntries() {
               <button onClick={(e) => { e.stopPropagation(); setCommentEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Comments">
                 <MessageSquare style={{ width: '14px', height: '14px' }} />
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data || []); }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate">
+              <button onClick={async (e) => { e.stopPropagation(); await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data?.data || r.data || []); }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate">
                 <Copy style={{ width: '14px', height: '14px' }} />
               </button>
               <button onClick={(e) => { e.stopPropagation(); setVersionEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Version history">
@@ -284,7 +289,7 @@ export default function ContentEntries() {
           {
             type: 'buttons',
             value: showTrash ? 'trash' : statusFilter,
-            onChange: (v) => { if (v === 'trash') { setShowTrash(true); setStatusFilter(''); setTagFilter(''); } else { setShowTrash(false); setStatusFilter(v); } },
+            onChange: (v) => { if (v === 'trash') { setShowTrash(true); setStatusFilter(''); setTagFilter(''); } else { setShowTrash(false); setStatusFilter(v); } setPage(1); },
             options: [
               { value: '', label: 'All' },
               { value: 'draft', label: 'Draft' },
@@ -295,7 +300,7 @@ export default function ContentEntries() {
           {
             type: 'select',
             value: tagFilter,
-            onChange: (v) => setTagFilter(v),
+            onChange: (v) => { setTagFilter(v); setPage(1); },
             options: [
               { value: '', label: 'All Tags' },
               ...allTags.map(t => ({ value: t.slug, label: t.name })),
@@ -510,6 +515,7 @@ export default function ContentEntries() {
         emptyState={<p style={{ color: '#94a3b8' }}>{search ? 'No matching entries' : showTrash ? 'Trash is empty' : 'No entries yet'}</p>}
         loading={loading}
       />
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
     </PageShell>
 
     {versionEntry && (
@@ -520,7 +526,7 @@ export default function ContentEntries() {
         onClose={() => setVersionEntry(null)}
         onRollback={async () => {
           const r = await api.get(`/api/v1/dynamic/${slug}`);
-          setEntries(r.data || []);
+          setEntries(r.data?.data || r.data || []);
         }}
       />
     )}
@@ -596,7 +602,7 @@ export default function ContentEntries() {
                   setShowBulkEdit(false);
                   setSelected([]);
                   const r = await api.get(`/api/v1/dynamic/${slug}`);
-                  setEntries(r.data || []);
+                  setEntries(r.data?.data || r.data || []);
                 } catch (err) {
                   alert(err.response?.data?.error || 'Bulk edit failed');
                 } finally {
