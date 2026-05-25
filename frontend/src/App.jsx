@@ -26,6 +26,7 @@ const SearchResults = lazy(() => import('./pages/SearchResults'));
 const Forms = lazy(() => import('./pages/Forms'));
 const Tags = lazy(() => import('./pages/Tags'));
 const ContentCalendar = lazy(() => import('./pages/ContentCalendar'));
+const LocalLogin = lazy(() => import('./pages/LocalLogin'));
 
 function AuthTokenBridge() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -154,6 +155,7 @@ export default function App() {
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
         <Route path="/sign-in/*" element={<ErrorBoundary><SignInPage /></ErrorBoundary>} />
         <Route path="/sign-up/*" element={<ErrorBoundary><SignUpPage /></ErrorBoundary>} />
+        <Route path="/local-login" element={<ErrorBoundary><LocalLogin /></ErrorBoundary>} />
         <Route path="/dashboard" element={<><SignedIn><Layout><Dashboard /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/content-types" element={<><SignedIn><Layout><ContentTypes /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/content/:slug" element={<><SignedIn><Layout><ContentEntries /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
