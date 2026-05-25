@@ -2,11 +2,13 @@ import express from 'express';
 import ContentType from '../models/contentType.js';
 import { contentTemplates } from '../utils/contentTemplates.js';
 import { logAudit } from '../utils/auditLogger.js';
+import validate from '../middlewares/validateMiddleware.js';
+import { createContentTypeSchema, updateContentTypeSchema } from '../utils/validationSchemas.js';
 
 const router = express.Router();
 
 // Protected endpoints
-router.post('/', async (req, res) => {
+router.post('/', validate(createContentTypeSchema), async (req, res) => {
     try {
         req.body.tenantId = req.tenant;
         if (!req.body.locales || req.body.locales.length === 0) req.body.locales = ['en'];
@@ -58,7 +60,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateContentTypeSchema), async (req, res) => {
     try {
         const ct = await ContentType.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, req.body, { new: true });
         if (!ct) return res.status(404).json({ message: 'Not found' });
