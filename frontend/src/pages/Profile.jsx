@@ -2,6 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { User, Mail, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, CheckCircle, XCircle } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useLocalAuth } from '../contexts/useLocalAuth';
+import { useToast } from '../contexts/ToastContext';
+import Field, { fieldClass } from '../components/Field';
+import { SkeletonStats, SkeletonTable } from '../components/Skeleton';
+import { validate } from '../utils/validate';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import api from '../utils/api';
@@ -9,11 +13,12 @@ import api from '../utils/api';
 export default function Profile() {
   const current = useCurrentUser();
   const localAuth = useLocalAuth();
+  const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const formDefaults = useMemo(() => ({ username: current.displayName || '', email: current.email || '' }), [current.displayName, current.email]);
   const [form, setForm] = useState({ username: '', email: '' });
-  const [message, setMessage] = useState('');
+  const [errors, setErrors] = useState({});
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(true);
@@ -50,6 +55,9 @@ export default function Profile() {
   }, [current.isLoaded, current.user, formDefaults]);
 
   const handleSave = async () => {
+    const errs = validate(form, { username: { required: true, label: 'Username', minLength: 2 } });
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setSaving(true);
     try {
       if (current.isClerk) {
@@ -57,10 +65,10 @@ export default function Profile() {
       } else {
         await api.put('/api/v1/users/me', { username: form.username });
       }
-      setMessage('Profile updated');
+      toast.success('Profile updated');
       setEditing(false);
     } catch {
-      setMessage('Failed to update');
+      toast.error('Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -92,18 +100,6 @@ export default function Profile() {
       icon={<User style={{ width: '22px', height: '22px' }} />}
       maxWidth="900px"
     >
-      {message && (
-        <div style={{
-          padding: '12px 16px', borderRadius: '12px',
-          background: message.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-          border: `1px solid ${message.includes('Failed') ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`,
-          color: message.includes('Failed') ? '#fca5a5' : '#34d399',
-          marginBottom: '20px', fontSize: '13px'
-        }}>
-          {message}
-        </div>
-      )}
-
       <div className="grid-2" style={{ marginBottom: '24px' }}>
         <div className="glass-card" style={{ padding: '28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -130,16 +126,13 @@ export default function Profile() {
           </div>
 
           <div style={{ display: 'grid', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
-                <User style={{ width: '12px', height: '12px' }} /> Username
-              </label>
+            <Field label="Username" error={errors.username} required>
               {editing ? (
-                <input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} className="input-field" />
+                <input value={form.username} onChange={e => { setForm({ ...form, username: e.target.value }); setErrors({ ...errors, username: '' }); }} className={fieldClass(errors.username)} />
               ) : (
                 <p style={{ fontSize: '14px', color: '#f8fafc' }}>{form.username}</p>
               )}
-            </div>
+            </Field>
             <div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
                 <Mail style={{ width: '12px', height: '12px' }} /> Email
@@ -191,7 +184,7 @@ export default function Profile() {
               </div>
             </div>
           ) : (
-            <p style={{ color: '#64748b', fontSize: '13px' }}>Loading stats...</p>
+            <SkeletonStats count={4} />
           )}
         </div>
       </div>
@@ -201,7 +194,7 @@ export default function Profile() {
           <Activity style={{ width: '18px', height: '18px', color: '#ff7e5f' }} /> Recent Activity
         </h3>
         {loadingActivity ? (
-          <p style={{ color: '#64748b', fontSize: '13px' }}>Loading activity...</p>
+          <SkeletonTable rows={5} />
         ) : activities.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', padding: '24px' }}>No recent activity</p>
         ) : (

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Webhook as WebhookIcon, Check, X, Clock, AlertCircle, List, RotateCw, Play, Shield } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import Field, { fieldClass } from '../components/Field';
+import { validate } from '../utils/validate';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -139,6 +141,7 @@ export default function Webhooks() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', url: '', events: [], contentType: '', maxRetries: 3, retryDelayMs: 5000, conditions: [] });
+  const [errors, setErrors] = useState({});
   const [conditionField, setConditionField] = useState('');
   const [conditionOp, setConditionOp] = useState('equals');
   const [conditionVal, setConditionVal] = useState('');
@@ -162,6 +165,9 @@ export default function Webhooks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate(form, { name: { required: true, label: 'Name' }, url: { required: true, label: 'URL', url: true } });
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setSaving(true);
     try {
       await api.post('/api/v1/webhooks', form);
@@ -206,8 +212,12 @@ export default function Webhooks() {
           <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>Create Webhook</h3>
           <form onSubmit={handleSubmit}>
             <div className="grid-2" style={{ marginBottom: '16px' }}>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Name" className="input-field" required />
-              <input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://example.com/webhook" className="input-field" required />
+              <Field label="Webhook Name" error={errors.name} required>
+                <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }} placeholder="e.g. Notify Slack" className={fieldClass(errors.name)} />
+              </Field>
+              <Field label="Webhook URL" error={errors.url} required>
+                <input value={form.url} onChange={e => { setForm({ ...form, url: e.target.value }); setErrors({ ...errors, url: '' }); }} placeholder="https://hooks.example.com/..." className={fieldClass(errors.url)} />
+              </Field>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>Events</label>

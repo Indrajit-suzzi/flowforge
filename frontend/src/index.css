@@ -792,3 +792,77 @@ a {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
+
+/* ==============================
+   Form Validation States
+   ============================== */
+.field-error {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15);
+}
+
+.field-error:focus {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.field-error-message {
+  font-size: 11px;
+  color: #fca5a5;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==============================
+   Skeleton Loading
+   ============================== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.skeleton-text {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 11px;
+  width: 60%;
+  margin-bottom: 6px;
+}
+
+.skeleton-heading {
+  height: 22px;
+  width: 40%;
+  margin-bottom: 16px;
+}
+
+.skeleton-card {
+  height: 120px;
+  width: 100%;
+  border-radius: 16px;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton-row {
+  height: 48px;
+  width: 100%;
+  margin-bottom: 4px;
+  border-radius: 8px;
+}

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Tag as TagIcon } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import Field, { fieldClass } from '../components/Field';
+import { SkeletonTable } from '../components/Skeleton';
+import { validate } from '../utils/validate';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import LoadingButton from '../components/LoadingButton';
@@ -14,6 +17,7 @@ export default function Tags() {
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#8b5cf6');
   const [creating, setCreating] = useState(false);
+  const [nameErr, setNameErr] = useState('');
 
   const loadTags = async () => {
     setLoading(true);
@@ -36,7 +40,9 @@ export default function Tags() {
   }, []);
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    const errs = validate({ name: newName }, { name: { required: true, label: 'Tag name' } });
+    setNameErr(errs.name || '');
+    if (errs.name) return;
     setCreating(true);
     try {
       const slug = newName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -71,15 +77,17 @@ export default function Tags() {
     >
       <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>Create Tag</h3>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Field label="Tag Name" error={nameErr} required>
           <input
             value={newName}
-            onChange={e => setNewName(e.target.value)}
-            placeholder="Tag name..."
-            className="input-field"
-            style={{ flex: 1, minWidth: '160px' }}
+            onChange={e => { setNewName(e.target.value); if (nameErr) setNameErr(''); }}
+            placeholder="Enter tag name..."
+            className={fieldClass(nameErr)}
+            style={{ width: '100%' }}
             onKeyDown={e => e.key === 'Enter' && handleCreate()}
           />
+        </Field>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '4px' }}>
             {TAG_COLORS.map(c => (
               <button
@@ -102,7 +110,7 @@ export default function Tags() {
           <TagIcon style={{ width: '16px', height: '16px', color: '#8b5cf6' }} /> All Tags ({tags.length})
         </h3>
         {loading ? (
-          <p style={{ color: '#64748b', fontSize: '13px' }}>Loading tags...</p>
+          <SkeletonTable rows={5} />
         ) : tags.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', padding: '24px' }}>No tags created yet.</p>
         ) : (

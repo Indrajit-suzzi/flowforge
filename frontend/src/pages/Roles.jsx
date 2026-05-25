@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Shield, Plus, Trash2, Edit2, Check, X, Save } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import Field, { fieldClass } from '../components/Field';
+import { SkeletonTable } from '../components/Skeleton';
+import { validate } from '../utils/validate';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -26,6 +29,7 @@ export default function Roles() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', slug: '', description: '', permissions: {} });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     api.get('/api/v1/roles').then(r => {
@@ -36,6 +40,9 @@ export default function Roles() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate(form, { name: { required: true, label: 'Name' }, slug: { required: true, label: 'Slug', pattern: /^[a-z0-9-]+$/, patternMessage: 'Slug must be lowercase letters, numbers, and hyphens' } });
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setSaving(true);
     try {
       if (editing) {
@@ -98,10 +105,16 @@ export default function Roles() {
           </h3>
           <form onSubmit={handleSubmit}>
             <div className="grid-2" style={{ marginBottom: '20px' }}>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Role name" className="input-field" required />
-              <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, '-') })} placeholder="Slug" className="input-field" required disabled={editing?.isSystem} />
+              <Field label="Role Name" error={errors.name} required>
+                <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }} placeholder="Enter role name" className={fieldClass(errors.name)} />
+              </Field>
+              <Field label="Slug" error={errors.slug} required>
+                <input value={form.slug} onChange={e => { setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, '-') }); setErrors({ ...errors, slug: '' }); }} placeholder="role-slug" className={fieldClass(errors.slug)} disabled={editing?.isSystem} />
+              </Field>
             </div>
-            <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description (optional)" className="input-field" style={{ marginBottom: '20px', width: '100%' }} />
+            <Field label="Description">
+              <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description (optional)" className="input-field" style={{ width: '100%' }} />
+            </Field>
 
             <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Permissions</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px', marginBottom: '20px' }}>
@@ -123,7 +136,9 @@ export default function Roles() {
         </div>
       )}
 
-      {roles.length === 0 && !loading ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : roles.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">No roles defined</p>
         </div>
