@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import fileUpload from 'express-fileupload';
 import { contentTemplates } from "./utils/contentTemplates.js";
 import logger from "./utils/logger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
+import requestLogger from "./middlewares/requestLogger.js";
 
 import dynamicRoutes from "./routes/dynamicRoutes.js";
 import contentTypeRoutes from "./routes/contentTypeRoutes.js";
@@ -36,7 +38,8 @@ import { scopeMiddleware } from './middlewares/scopeMiddleware.js';
 const app = express();
 
 const corsOrigins = process.env.CORS_ORIGINS;
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(compression());
 app.use(cors({
   origin: corsOrigins ? corsOrigins.split(',').map(s => s.trim()) : ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -51,6 +54,8 @@ app.use((req, _res, next) => {
   req.log = logger.child({ reqId: req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
   next();
 });
+
+app.use(requestLogger);
 
 if (process.env.TRUST_PROXY) {
   app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
