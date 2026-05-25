@@ -32,7 +32,7 @@ import authMiddleware from './middlewares/authMiddleware.js';
 import tenantMiddleware from './middlewares/tenantMiddleware.js';
 import analyticsMiddleware from './middlewares/analyticsMiddleware.js';
 import { roleMiddleware } from './middlewares/roleMiddleware.js';
-import rateLimit from './middlewares/rateLimit.js';
+import { authLimiter, apiLimiter, webhookLimiter, generousLimiter } from './middlewares/rateLimit.js';
 import keyRateLimit from './middlewares/keyRateLimit.js';
 import { scopeMiddleware } from './middlewares/scopeMiddleware.js';
 
@@ -49,7 +49,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
-app.use(rateLimit({ windowMs: 60000, max: 1000 }));
+app.use(generousLimiter);
 
 app.use((req, _res, next) => {
   req.log = logger.child({ reqId: req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
@@ -74,9 +74,9 @@ if (clerkConfigured) {
   logger.info('Clerk not configured — using JWT fallback');
 }
 
-// Auth routes (register/login — no auth middleware)
+// Auth routes (register/login — no auth middleware, strict rate limit)
 import authRoutes from './routes/authRoutes.js';
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth", authLimiter, authRoutes);
 
 // Public templates endpoint
 app.get("/api/v1/content-types/templates", (req, res) => {
@@ -84,24 +84,24 @@ app.get("/api/v1/content-types/templates", (req, res) => {
   res.json(contentTemplates);
 });
 
-app.use("/api/v1/dynamic", authMiddleware, keyRateLimit(), scopeMiddleware(), tenantMiddleware, roleMiddleware('contentEntries'), analyticsMiddleware, dynamicRoutes);
-app.use("/api/v1/content-types", authMiddleware, keyRateLimit(), scopeMiddleware(), tenantMiddleware, roleMiddleware('contentTypes'), analyticsMiddleware, contentTypeRoutes);
-app.use("/api/v1/api-keys", authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('apiKeys'), analyticsMiddleware, apiKeyRoutes);
-app.use("/api/v1/analytics", authMiddleware, keyRateLimit(), roleMiddleware('analytics'), analyticsRoutes);
-app.use("/api/v1/audit-logs", authMiddleware, keyRateLimit(), roleMiddleware('auditLogs'), auditLogRoutes);
-app.use("/api/v1/webhooks", authMiddleware, keyRateLimit(), roleMiddleware('webhooks'), webhookRoutes);
-app.use("/api/v1/media", authMiddleware, keyRateLimit(), roleMiddleware('mediaLibrary'), mediaRoutes);
-app.use("/api/v1/users", authMiddleware, keyRateLimit(), tenantMiddleware, userRoutes);
-app.use("/api/v1/roles", authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('roles'), roleRoutes);
-app.use("/api/v1/graphql", authMiddleware, keyRateLimit(), tenantMiddleware, graphqlHandler);
-app.use("/api/v1/search", authMiddleware, keyRateLimit(), tenantMiddleware, searchRoutes);
-app.use("/api/v1/theme", authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('branding'), themeRoutes);
-app.use("/api/v1/forms", authMiddleware, keyRateLimit(), tenantMiddleware, formRoutes);
-app.use("/api/v1/calendar", authMiddleware, keyRateLimit(), tenantMiddleware, calendarRoutes);
-app.use("/api/v1/stats", authMiddleware, keyRateLimit(), tenantMiddleware, statsRoutes);
-app.use("/api/v1/locks", authMiddleware, keyRateLimit(), tenantMiddleware, lockRoutes);
-app.use("/api/v1/comments", authMiddleware, keyRateLimit(), tenantMiddleware, commentRoutes);
-app.use("/api/v1/tags", authMiddleware, keyRateLimit(), tenantMiddleware, tagRoutes);
+app.use("/api/v1/dynamic", apiLimiter, authMiddleware, keyRateLimit(), scopeMiddleware(), tenantMiddleware, roleMiddleware('contentEntries'), analyticsMiddleware, dynamicRoutes);
+app.use("/api/v1/content-types", apiLimiter, authMiddleware, keyRateLimit(), scopeMiddleware(), tenantMiddleware, roleMiddleware('contentTypes'), analyticsMiddleware, contentTypeRoutes);
+app.use("/api/v1/api-keys", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('apiKeys'), analyticsMiddleware, apiKeyRoutes);
+app.use("/api/v1/analytics", apiLimiter, authMiddleware, keyRateLimit(), roleMiddleware('analytics'), analyticsRoutes);
+app.use("/api/v1/audit-logs", apiLimiter, authMiddleware, keyRateLimit(), roleMiddleware('auditLogs'), auditLogRoutes);
+app.use("/api/v1/webhooks", webhookLimiter, authMiddleware, keyRateLimit(), roleMiddleware('webhooks'), webhookRoutes);
+app.use("/api/v1/media", apiLimiter, authMiddleware, keyRateLimit(), roleMiddleware('mediaLibrary'), mediaRoutes);
+app.use("/api/v1/users", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, userRoutes);
+app.use("/api/v1/roles", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('roles'), roleRoutes);
+app.use("/api/v1/graphql", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, graphqlHandler);
+app.use("/api/v1/search", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, searchRoutes);
+app.use("/api/v1/theme", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('branding'), themeRoutes);
+app.use("/api/v1/forms", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, formRoutes);
+app.use("/api/v1/calendar", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, calendarRoutes);
+app.use("/api/v1/stats", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, statsRoutes);
+app.use("/api/v1/locks", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, lockRoutes);
+app.use("/api/v1/comments", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, commentRoutes);
+app.use("/api/v1/tags", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, tagRoutes);
 app.use("/api/v1/docs", docsRoutes);
 
 // OpenAPI spec
