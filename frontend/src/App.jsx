@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import ContentTypes from './pages/ContentTypes';
@@ -39,7 +40,7 @@ function Layout({ children }) {
       <div className="admin-glow-blob purple" style={{ bottom: '10%', right: '-8%', width: '600px', height: '600px' }} />
       <div className="page-grid-bg" />
       <Navbar />
-      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}><TenantThemeProvider>{children}</TenantThemeProvider></main>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}><TenantThemeProvider><ErrorBoundary>{children}</ErrorBoundary></TenantThemeProvider></main>
       <Footer />
     </div>
   );
@@ -134,9 +135,9 @@ export default function App() {
     <>
       <AuthTokenBridge />
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/sign-in/*" element={<SignInPage />} />
-        <Route path="/sign-up/*" element={<SignUpPage />} />
+        <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
+        <Route path="/sign-in/*" element={<ErrorBoundary><SignInPage /></ErrorBoundary>} />
+        <Route path="/sign-up/*" element={<ErrorBoundary><SignUpPage /></ErrorBoundary>} />
         <Route path="/dashboard" element={<><SignedIn><Layout><Dashboard /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/content-types" element={<><SignedIn><Layout><ContentTypes /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/content/:slug" element={<><SignedIn><Layout><ContentEntries /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />

@@ -7,6 +7,7 @@ import { contentTemplates } from "./utils/contentTemplates.js";
 import logger from "./utils/logger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 import requestLogger from "./middlewares/requestLogger.js";
+import sanitize from "./middlewares/sanitize.js";
 
 import dynamicRoutes from "./routes/dynamicRoutes.js";
 import contentTypeRoutes from "./routes/contentTypeRoutes.js";
@@ -55,6 +56,7 @@ app.use((req, _res, next) => {
   next();
 });
 
+app.use(sanitize);
 app.use(requestLogger);
 
 if (process.env.TRUST_PROXY) {
