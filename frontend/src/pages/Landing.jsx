@@ -586,7 +586,7 @@ export default function Landing() {
             {[
               { val: 100, suffix: '%', label: 'Data Isolation' },
               { val: 15, suffix: 'ms', label: 'Schema Generation', prefix: '<' },
-              { val: 5, suffix: '', label: 'Role-Based RBAC', prefix: '&#8203;' },
+              { val: 5, suffix: '', label: 'Role-Based RBAC' },
               { val: 1, suffix: '', label: 'Docker Command Deploy', prefix: '1 ' }
             ].map((stat, idx) => (
               <motion.div 
