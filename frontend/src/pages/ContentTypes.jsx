@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3 } from 'lucide-react';
+import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3, Search, Asterisk } from 'lucide-react';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
+
+const FIELD_TYPE_COLORS = {
+  String: '#34d399',
+  RichText: '#60a5fa',
+  Number: '#f59e0b',
+  Boolean: '#a78bfa',
+  Date: '#f472b6',
+  Reference: '#fb923c',
+};
 
 export default function ContentTypes() {
   const [contentTypes, setContentTypes] = useState([]);
@@ -22,6 +31,8 @@ export default function ContentTypes() {
   const [importSchemaJson, setImportSchemaJson] = useState('');
   const [importingSchema, setImportingSchema] = useState(false);
   const [importSchemaResult, setImportSchemaResult] = useState(null);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [expandedTemplate, setExpandedTemplate] = useState(null);
 
   useEffect(() => { 
     Promise.all([
@@ -114,19 +125,90 @@ export default function ContentTypes() {
     >
       {/* Templates Modal */}
       {showTemplates && (
-        <div className="modal-overlay" onClick={() => setShowTemplates(false)}>
-          <div className="glass-card modal-content" style={{ padding: '28px', maxWidth: '700px' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>Choose a Template</h3>
-            <div className="grid-auto-fill" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-              {templates.map(t => (
-                <button key={t.slug} onClick={() => handleTemplate(t.slug)} className="glass-card-sm" style={{ padding: '16px', cursor: 'pointer', textAlign: 'left', background: 'rgba(8, 5, 17, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>{t.name}</p>
-                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{t.description}</p>
-                  <p style={{ fontSize: '10px', color: '#475569', marginTop: '8px' }}>{t.fields.length} fields</p>
-                </button>
-              ))}
+        <div className="modal-overlay" onClick={() => { setShowTemplates(false); setTemplateSearch(''); setExpandedTemplate(null); }}>
+          <div className="glass-card modal-content" style={{ padding: '28px', maxWidth: '800px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>Choose a Template</h3>
+              <div style={{ position: 'relative', width: '260px' }}>
+                <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#475569' }} />
+                <input
+                  value={templateSearch}
+                  onChange={e => setTemplateSearch(e.target.value)}
+                  placeholder="Filter templates..."
+                  className="input-field"
+                  style={{ paddingLeft: '30px', fontSize: '12px', width: '100%' }}
+                />
+              </div>
             </div>
-            <button onClick={() => setShowTemplates(false)} className="btn-secondary" style={{ marginTop: '20px', width: '100%', justifyContent: 'center' }}>Cancel</button>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <div className="grid-auto-fill" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                {templates.filter(t => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()) || t.slug.toLowerCase().includes(templateSearch.toLowerCase()) || t.description.toLowerCase().includes(templateSearch.toLowerCase())).map(t => {
+                  const required = t.fields.filter(f => f.required).length;
+                  const optional = t.fields.length - required;
+                  const isExpanded = expandedTemplate === t.slug;
+                  return (
+                    <div key={t.slug} className="glass-card-sm" style={{ padding: 0, background: 'rgba(8, 5, 17, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                      <div style={{ padding: '16px 16px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '6px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>{t.name}</p>
+                          <button onClick={() => handleTemplate(t.slug)} className="btn-primary" style={{ padding: '5px 12px', fontSize: '11px', border: 'none', whiteSpace: 'nowrap' }}>
+                            <Plus style={{ width: '11px', height: '11px' }} /> Use
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>{t.description}</p>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8', fontWeight: '500' }}>
+                            {t.fields.length} fields
+                          </span>
+                          {required > 0 && (
+                            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', fontWeight: '500' }}>
+                              {required} required
+                            </span>
+                          )}
+                          {optional > 0 && (
+                            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(100,116,139,0.15)', color: '#64748b', fontWeight: '500' }}>
+                              {optional} optional
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ borderTop: isExpanded ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                        <button
+                          onClick={() => setExpandedTemplate(isExpanded ? null : t.slug)}
+                          style={{ width: '100%', padding: '8px 16px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
+                        >
+                          {isExpanded ? 'Hide fields' : 'Show fields'}
+                        </button>
+                        {isExpanded && (
+                          <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {t.fields.map((f, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
+                                <span style={{ 
+                                  display: 'inline-block', padding: '1px 6px', borderRadius: '4px', 
+                                  fontSize: '9px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap',
+                                  background: FIELD_TYPE_COLORS[f.type] || '#64748b' 
+                                }}>
+                                  {f.type}
+                                </span>
+                                <span style={{ fontSize: '12px', color: '#e2e8f0', flex: 1 }}>{f.name}</span>
+                                {f.required ? (
+                                  <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                    <Asterisk style={{ width: '10px', height: '10px' }} /> req
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '9px', color: '#475569' }}>opt</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={() => { setShowTemplates(false); setTemplateSearch(''); setExpandedTemplate(null); }} className="btn-secondary" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>Cancel</button>
           </div>
         </div>
       )}
