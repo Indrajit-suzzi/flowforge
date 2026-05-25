@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 
 dotenv.config();
 
+const { validateEnv } = await import("./src/utils/envValidation.js");
+validateEnv();
+
 const { default: app } = await import("./src/app.js");
 const { default: connectDB } = await import("./src/config/db.js");
 const { startScheduler, stopScheduler } = await import("./src/services/scheduler.js");

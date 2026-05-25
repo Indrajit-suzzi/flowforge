@@ -73,6 +73,7 @@ if (clerkSecret && clerkSecret !== 'your_clerk_secret_key_here' && clerkPublisha
 
 // Public templates endpoint
 app.get("/api/v1/content-types/templates", (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300');
   res.json(contentTemplates);
 });
 
@@ -99,14 +100,31 @@ app.use("/api/v1/docs", docsRoutes);
 app.get("/api/v1/health", async (req, res) => {
   try {
     const mongoose = (await import('mongoose')).default;
-    const state = mongoose.connection.readyState;
-    res.json({ status: 'ok', db: state === 1 ? 'connected' : 'disconnected', uptime: process.uptime(), timestamp: new Date().toISOString() });
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' }[dbState] || 'unknown';
+    const mem = process.memoryUsage();
+    res.json({
+      status: dbState === 1 ? 'ok' : 'degraded',
+      version: process.env.npm_package_version || '1.0.0',
+      uptime: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      node: process.version,
+      env: process.env.NODE_ENV || 'development',
+      db: dbStatus,
+      memory: {
+        rss: `${Math.round(mem.rss / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)} MB`,
+      },
+    });
   } catch (err) {
     res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
 app.get("/api/v1/sitemap.xml", async (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.setHeader('Vary', 'Accept-Encoding');
   try {
     const { default: ContentType } = await import('./models/contentType.js');
     const { default: getModel } = await import('./models/genericModel.js');
