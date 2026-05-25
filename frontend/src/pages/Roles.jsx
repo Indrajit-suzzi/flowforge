@@ -26,7 +26,6 @@ export default function Roles() {
   const [form, setForm] = useState({ name: '', slug: '', description: '', permissions: {} });
 
   useEffect(() => {
-    setLoading(true);
     api.get('/api/v1/roles').then(r => {
       setRoles(r.data || []);
       setLoading(false);

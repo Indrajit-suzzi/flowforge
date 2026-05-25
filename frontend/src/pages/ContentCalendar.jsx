@@ -28,13 +28,12 @@ export default function ContentCalendar() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
   const [contentTypes, setContentTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filterCT, setFilterCT] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedDayEntries, setSelectedDayEntries] = useState([]);
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
       api.get(`/api/v1/calendar?year=${year}&month=${month}`),
       api.get('/api/v1/content-types'),
@@ -51,7 +50,7 @@ export default function ContentCalendar() {
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month - 1;
 
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const padding = Array.from({ length: firstDOW }, (_, i) => null);
+  const padding = Array.from({ length: firstDOW }, () => null);
 
   const filtered = filterCT ? entries.filter(e => e.contentTypeSlug === filterCT) : entries;
 

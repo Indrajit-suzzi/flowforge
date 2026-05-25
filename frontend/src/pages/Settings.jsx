@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette, Trash2, RotateCcw } from 'lucide-react';
+import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette, RotateCcw } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -46,7 +46,7 @@ export default function Settings() {
       if (p.notifications) setNotifications({ email: true, webhook: false, ...p.notifications });
     }).catch(() => {});
     api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
-  }, []);
+  }, [theme]);
 
   const savePreferences = async () => {
     setSavingPrefs(true);

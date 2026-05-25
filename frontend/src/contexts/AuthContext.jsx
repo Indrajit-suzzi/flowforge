@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import api from '../utils/api';
 
-const AuthContext = createContext();
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -11,7 +12,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token) {
       api.defaults.headers.Authorization = `Bearer ${token}`;
-      setLoading(true);
       api.get('/api/v1/users/me')
         .then(res => setUser(res.data))
         .catch(() => {
@@ -45,4 +45,3 @@ export function AuthProvider({ children }) {
   );
 }
 
-export const useLocalAuth = () => useContext(AuthContext);

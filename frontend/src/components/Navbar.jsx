@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Zap, LayoutDashboard, Layers, Key, BarChart3, FileText, Webhook, Image, Users, Settings, User, Book, ChevronDown, LogOut, Shield, Search, Code, ClipboardList, CalendarDays, Tag } from 'lucide-react';
-import { useClerk, useUser } from '@clerk/clerk-react';
+import { useClerk } from '@clerk/clerk-react';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useLocalAuth } from '../contexts/useLocalAuth';
 import { useRole } from '../hooks/useRole';
 import './Navbar.css';
 
@@ -37,9 +39,12 @@ const categories = [
 ];
 
 export default function Navbar() {
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const { signOut: clerkSignOut } = useClerk();
+  const { user: clerkUser } = useCurrentUser();
+  const { user: localUser, logout: localLogout } = useLocalAuth();
   const { isAdmin } = useRole();
+
+  const user = clerkUser || localUser;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -53,7 +58,8 @@ export default function Navbar() {
 
   const closeAll = useCallback(() => { setOpenCat(null); setUserOpen(false); }, []);
 
-  useEffect(() => { closeAll(); }, [location.pathname, closeAll]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setOpenCat(null); setUserOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     if (userOpen && userBtn.current) {
@@ -72,6 +78,8 @@ export default function Navbar() {
   const displayName = user?.firstName || user?.username || 'User';
   const email = user?.primaryEmailAddress?.emailAddress || '';
   const visibleCategories = categories.filter(c => !c.adminOnly || isAdmin);
+
+  const getBtn = (label) => btns.current[label];
 
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
@@ -97,9 +105,8 @@ export default function Navbar() {
 
           {/* Category trigger buttons */}
           <div style={{ display: 'flex', gap: '4px', flex: 1, marginLeft: '24px' }}>
-            {visibleCategories.map((cat, i) => {
+      {visibleCategories.map((cat) => {
               const isOpen = openCat === cat.label;
-              const isLast = i === visibleCategories.length - 1;
               return (
                 <div key={cat.label} style={{ position: 'relative' }}>
                   <button
@@ -168,9 +175,10 @@ export default function Navbar() {
       )}
 
       {/* Category dropdowns — fixed positioned, no parent clipping */}
+      {/* eslint-disable react-hooks/refs */}
       {visibleCategories.map((cat, i) => {
         if (openCat !== cat.label) return null;
-        const btn = btns.current[cat.label];
+        const btn = getBtn(cat.label);
         if (!btn) return null;
         const rect = btn.getBoundingClientRect();
         const isLast = i === visibleCategories.length - 1;
@@ -209,6 +217,7 @@ export default function Navbar() {
           </div>
         );
       })}
+      {/* eslint-enable react-hooks/refs */}
 
       {/* User dropdown */}
       {userOpen && (
@@ -239,7 +248,7 @@ export default function Navbar() {
             <Settings style={{ width: '14px', height: '14px' }} /> Settings
           </Link>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '4px', paddingTop: '4px' }}>
-            <button onClick={() => signOut({ redirectUrl: '/' })} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px', fontSize: '13px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s' }}
+            <button onClick={() => clerkUser ? clerkSignOut({ redirectUrl: '/' }) : localLogout()} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px', fontSize: '13px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.paddingLeft = '18px'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '14px'; }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign out

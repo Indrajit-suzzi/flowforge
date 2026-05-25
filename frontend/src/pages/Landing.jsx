@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   ArrowRight, CheckCircle, Zap, Code, Key, Layers, 
-  Shield, LayoutDashboard, Server, Globe, Terminal, 
-  Sparkles, Sliders, Database, ArrowUpRight, Play, Eye
+  Shield, LayoutDashboard, Server, Terminal, 
+  Sparkles, Database, ArrowUpRight
 } from 'lucide-react';
 import './Landing.css';
 
@@ -102,8 +102,6 @@ function InteractiveOrb() {
       // 3D projection parameters
       const perspective = 320;
       const distance = 2.4;
-      const scale = 140 + (hovered ? 15 : 0);
-
       // Center coordinates
       const cx = width / 2;
       const cy = height / 2;
@@ -339,42 +337,6 @@ export default function Landing() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     });
-  };
-
-  const codeSnippets = {
-    schema: `// 1. Create a Dynamic Content Schema
-POST /api/v1/schemas
-Headers: { "Authorization": "Bearer KEY_XXXX" }
-Body: {
-  "name": "Product",
-  "fields": [
-    { "name": "title", "type": "String", "required": true },
-    { "name": "price", "type": "Number", "required": true },
-    { "name": "category", "type": "String" },
-    { "name": "inStock", "type": "Boolean", "default": true }
-  ]
-}`,
-    query: `// 2. Query Content instantly
-GET /api/v1/dynamic/product?category=gadgets
-Headers: { 
-  "Authorization": "Bearer KEY_XXXX",
-  "X-Tenant-ID": "tenant_workspace_01"
-}`,
-    response: `// 3. Response JSON (Auto-isolated & Validated)
-{
-  "status": "success",
-  "results": 2,
-  "data": [
-    {
-      "_id": "673f8b9e11c4",
-      "title": "Sonic Wireless Headset",
-      "price": 129.99,
-      "category": "gadgets",
-      "inStock": true,
-      "createdAt": "2026-05-21T12:00:00Z"
-    }
-  ]
-}`
   };
 
   const features = [

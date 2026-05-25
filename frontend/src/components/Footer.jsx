@@ -1,4 +1,4 @@
-import { Zap, Code } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export default function Footer({ maxWidth = '1400px' }) {
   return (

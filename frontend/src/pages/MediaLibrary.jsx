@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon } from 'lucide-react';
+import { Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
@@ -8,14 +8,12 @@ const typeIcons = { image: Image, document: FileText, video: Video, audio: Music
 
 export default function MediaLibrary() {
   const [media, setMedia] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('');
   const [copied, setCopied] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => { 
-    setLoading(true);
-    api.get(`/api/v1/media${filter ? `?type=${filter}` : ''}`).then(r => { setMedia(r.data || []); setLoading(false); }).catch(() => setLoading(false)); 
+    api.get(`/api/v1/media${filter ? `?type=${filter}` : ''}`).then(r => { setMedia(r.data || []); }).catch(() => {}); 
   }, [filter]);
 
   const handleUpload = async (e) => {

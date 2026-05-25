@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useLocalAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useLocalAuth } from '../contexts/useLocalAuth';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import PageShell from '../components/PageShell';
 

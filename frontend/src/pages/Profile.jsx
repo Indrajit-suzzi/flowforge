@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User, Mail, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, CheckCircle, XCircle } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useLocalAuth } from '../contexts/AuthContext';
+import { useLocalAuth } from '../contexts/useLocalAuth';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import api from '../utils/api';
@@ -11,19 +11,12 @@ export default function Profile() {
   const localAuth = useLocalAuth();
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const formDefaults = useMemo(() => ({ username: current.displayName || '', email: current.email || '' }), [current.displayName, current.email]);
   const [form, setForm] = useState({ username: '', email: '' });
   const [message, setMessage] = useState('');
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(true);
-
-  useEffect(() => {
-    if (current.isLoaded && current.user) {
-      setForm({ username: current.displayName, email: current.email });
-      loadActivity();
-      loadStats();
-    }
-  }, [current.isLoaded, current.user]);
 
   const loadActivity = async () => {
     try {
@@ -46,6 +39,16 @@ export default function Profile() {
     } catch { /* ignore */ }
   };
 
+  useEffect(() => {
+    if (current.isLoaded && current.user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setForm(formDefaults);
+      loadActivity();
+      loadStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.isLoaded, current.user, formDefaults]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -56,7 +59,7 @@ export default function Profile() {
       }
       setMessage('Profile updated');
       setEditing(false);
-    } catch (err) {
+    } catch {
       setMessage('Failed to update');
     } finally {
       setSaving(false);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, ArrowUpRight, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3 } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import api from '../utils/api';
 import RichTextEditor from '../components/RichTextEditor';
@@ -17,7 +17,7 @@ export default function ContentEntries() {
   const { slug } = useParams();
   const [contentType, setContentType] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({});
@@ -42,11 +42,10 @@ export default function ContentEntries() {
   const { user } = useUser();
   const userId = user?.id;
   const userName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Unknown';
-  const { lock, acquiring, acquireLock, releaseLock } = useEntryLock(slug, editingEntry?._id, userId, userName);
+  const { lock, acquireLock, releaseLock } = useEntryLock(slug, editingEntry?._id, userId, userName);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    setLoading(true);
     const trashParam = showTrash ? 'trash=true' : '';
     const statusParam = statusFilter ? `status=${statusFilter}` : '';
     const tagParam = tagFilter ? `tag=${tagFilter}` : '';
@@ -589,7 +588,7 @@ export default function ContentEntries() {
             <LoadingButton
               loading={bulkEditing}
               onClick={async () => {
-                const updates = Object.fromEntries(Object.entries(bulkEditForm).filter(([_, v]) => v !== undefined && v !== '' && v !== null));
+                const updates = Object.fromEntries(Object.entries(bulkEditForm).filter(([, v]) => v !== undefined && v !== '' && v !== null));
                 if (!Object.keys(updates).length) { alert('No fields to update'); return; }
                 setBulkEditing(true);
                 try {

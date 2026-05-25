@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Trash2, Tag as TagIcon, Palette } from 'lucide-react';
+import { Plus, Trash2, Tag as TagIcon } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import LoadingButton from '../components/LoadingButton';
@@ -13,8 +13,6 @@ export default function Tags() {
   const [newColor, setNewColor] = useState('#8b5cf6');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => { loadTags(); }, []);
-
   const loadTags = async () => {
     setLoading(true);
     try {
@@ -23,6 +21,17 @@ export default function Tags() {
     } catch { /* ignore */ }
     setLoading(false);
   };
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get('/api/v1/tags');
+        setTags(data || []);
+      } catch { /* ignore */ }
+      setLoading(false);
+    })();
+  }, []);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;

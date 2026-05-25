@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, ArrowRight, AlertCircle, Info } from 'lucide-react';
+import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -26,7 +26,7 @@ const CodeBlock = ({ code, language, id, copied, onCopy }) => {
   );
 };
 
-const EndpointCard = ({ method, path, desc, request, response, params, body, id, copied, onCopy }) => {
+const EndpointCard = ({ method, path, desc, response, params, body, id, copied, onCopy }) => {
   const methodColors = { GET: '#3b82f6', POST: '#10b981', PUT: '#f59e0b', DELETE: '#ef4444', PATCH: '#8b5cf6' };
   const [open, setOpen] = useState(false);
 
@@ -87,8 +87,6 @@ export default function ApiDocs() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     api.get('/api/v1/docs')
       .then(r => { setDocs(r.data); setLoading(false); })
       .catch(err => {
@@ -223,7 +221,6 @@ const posts = await client.get('/dynamic/blog');`;
               </div>
             </div>
             {filteredSections.map(s => {
-              const Icon = s.icon;
               const isActive = activeSection === s.id;
               return (
                 <button key={s.id} onClick={() => setActiveSection(s.id)} 
@@ -453,7 +450,7 @@ const posts = await client.get('/dynamic/blog');`;
           {/* Content Routes */}
           {activeSection === 'content-routes' && (
             <div>
-              {docs.contentTypes.map((ct, idx) => (
+              {docs.contentTypes.map((ct) => (
                 <div key={ct.slug} className="glass-card" style={{ marginBottom: '20px', overflow: 'hidden' }}>
                   <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255, 126, 95, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255, 126, 95, 0.2)' }}>

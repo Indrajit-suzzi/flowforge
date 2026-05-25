@@ -9,11 +9,10 @@ export default function SearchResults() {
   const query = searchParams.get('q') || '';
   const [results, setResults] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!query || query.length < 2) return;
-    setLoading(true);
     api.get(`/api/v1/search?q=${encodeURIComponent(query)}`)
       .then(r => {
         setResults(r.data.data || []);

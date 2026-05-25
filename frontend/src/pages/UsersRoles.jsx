@@ -118,7 +118,7 @@ export default function UsersRoles() {
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {users.map((u, idx) => {
+        {users.map((u) => {
           const roleDef = roles.find(r => r.slug === u.role);
           const rc = defaultRoleColors[roles.indexOf(roleDef) % defaultRoleColors.length] || defaultRoleColors[0];
           return (

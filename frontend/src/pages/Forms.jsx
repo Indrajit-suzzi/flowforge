@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, GripVertical, Eye, List, FileText, ArrowLeft, Check } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Eye, List, FileText, ArrowLeft } from 'lucide-react';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -8,7 +8,6 @@ const fieldTypes = ['text', 'textarea', 'email', 'number', 'select', 'checkbox',
 
 export default function Forms() {
   const [forms, setForms] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -21,8 +20,7 @@ export default function Forms() {
   const [newField, setNewField] = useState({ name: '', type: 'text', label: '', placeholder: '', required: false, options: '' });
 
   useEffect(() => {
-    setLoading(true);
-    api.get('/api/v1/forms').then(r => { setForms(r.data || []); setLoading(false); }).catch(() => setLoading(false));
+    api.get('/api/v1/forms').then(r => { setForms(r.data || []); }).catch(() => {});
   }, []);
 
   const handleSubmit = async (e) => {

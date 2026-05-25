@@ -11,7 +11,6 @@ function WebhookLogViewer({ webhookId, webhookName, onClose }) {
   const [retrying, setRetrying] = useState(null);
 
   const loadLogs = () => {
-    setLoading(true);
     api.get(`/api/v1/webhooks/${webhookId}/logs?limit=50`)
       .then(r => { setLogs(r.data.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -134,7 +133,6 @@ function WebhookLogViewer({ webhookId, webhookName, onClose }) {
 
 export default function Webhooks() {
   const [webhooks, setWebhooks] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', url: '', events: [], contentType: '', maxRetries: 3, retryDelayMs: 5000, conditions: [] });
@@ -156,8 +154,7 @@ export default function Webhooks() {
   const [rotateResult, setRotateResult] = useState(null);
 
   useEffect(() => { 
-    setLoading(true);
-    api.get('/api/v1/webhooks').then(r => { setWebhooks(r.data || []); setLoading(false); }).catch(() => setLoading(false)); 
+    api.get('/api/v1/webhooks').then(r => { setWebhooks(r.data || []); }).catch(() => {}); 
   }, []);
 
   const handleSubmit = async (e) => {

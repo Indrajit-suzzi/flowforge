@@ -119,10 +119,8 @@ export default function VersionHistory({ slug, entryId, entryName, onClose, onRo
   const [compareMode, setCompareMode] = useState(false);
   const [compareSelection, setCompareSelection] = useState([]);
   const [diffData, setDiffData] = useState(null);
-  const [comparing, setComparing] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     api.get(`/api/v1/dynamic/${slug}/${entryId}/versions`)
       .then(r => { setVersions(r.data.data || []); setLoading(false); })
       .catch(err => { setError(err.response?.data?.message || 'Failed to load versions'); setLoading(false); });
@@ -130,15 +128,14 @@ export default function VersionHistory({ slug, entryId, entryName, onClose, onRo
 
   useEffect(() => {
     if (compareSelection.length === 2) {
-      setComparing(true);
-      setDiffData(null);
       const [v1, v2] = compareSelection;
       const from = v1.version < v2.version ? v1._id : v2._id;
       const to = v1.version < v2.version ? v2._id : v1._id;
       api.get(`/api/v1/dynamic/${slug}/${entryId}/versions/diff?from=${from}&to=${to}`)
-        .then(r => { setDiffData(r.data); setComparing(false); })
-        .catch(err => { setError(err.response?.data?.message || 'Diff failed'); setComparing(false); });
+        .then(r => setDiffData(r.data))
+        .catch(err => setError(err.response?.data?.message || 'Diff failed'));
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDiffData(null);
     }
   }, [compareSelection, slug, entryId]);

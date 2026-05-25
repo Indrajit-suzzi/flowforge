@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Globe, X, Save, Check } from 'lucide-react';
 import api from '../utils/api';
 import RichTextEditor from './RichTextEditor';
 
-const typeMap = { String: 'text', Number: 'number', Date: 'date', Boolean: 'checkbox', RichText: 'richtext' };
-
 export default function TranslationEditor({ slug, entry, contentType, onClose }) {
-  const [translations, setTranslations] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
@@ -14,6 +11,36 @@ export default function TranslationEditor({ slug, entry, contentType, onClose })
 
   const otherLocales = (contentType.locales || ['en']).filter(l => l !== entry.locale);
   const localizableFields = contentType.fields.filter(f => f.localizable);
+
+  const defaultTranslations = useMemo(() => {
+    const locs = (contentType.locales || ['en']).filter(l => l !== entry.locale);
+    const fields = contentType.fields.filter(f => f.localizable);
+    const initial = {};
+    if (entry.translations) {
+      for (const t of entry.translations) {
+        initial[t.locale] = {};
+        for (const f of fields) {
+          initial[t.locale][f.name] = (t.fields && t.fields[f.name]) || entry[f.name] || '';
+        }
+      }
+    }
+    for (const loc of locs) {
+      if (!initial[loc]) {
+        initial[loc] = {};
+        for (const f of fields) {
+          initial[loc][f.name] = entry[f.name] || '';
+        }
+      }
+    }
+    return initial;
+  }, [entry, contentType]);
+
+  const [translations, setTranslations] = useState(defaultTranslations);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTranslations(defaultTranslations);
+  }, [defaultTranslations]);
 
   useEffect(() => {
     const refFields = contentType.fields.filter(f => f.type === 'Reference' && f.refContentType);
@@ -26,26 +53,7 @@ export default function TranslationEditor({ slug, entry, contentType, onClose })
         setRefData(map);
       });
     }
-
-    const initial = {};
-    if (entry.translations) {
-      for (const t of entry.translations) {
-        initial[t.locale] = {};
-        for (const f of localizableFields) {
-          initial[t.locale][f.name] = (t.fields && t.fields[f.name]) || entry[f.name] || '';
-        }
-      }
-    }
-    for (const loc of otherLocales) {
-      if (!initial[loc]) {
-        initial[loc] = {};
-        for (const f of localizableFields) {
-          initial[loc][f.name] = entry[f.name] || '';
-        }
-      }
-    }
-    setTranslations(initial);
-  }, [entry, contentType]);
+  }, [contentType]);
 
   const handleChange = (locale, field, value) => {
     setTranslations(prev => ({

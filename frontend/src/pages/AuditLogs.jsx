@@ -18,13 +18,12 @@ const actionColors = {
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState({ action: '', entityType: '' });
 
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams({ page, limit: 50, ...filter });
     api.get(`/api/v1/audit-logs?${params}`).then(r => {
       setLogs(r.data.logs || []);

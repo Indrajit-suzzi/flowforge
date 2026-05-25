@@ -8,13 +8,12 @@ const allPerms = ['read', 'write', 'delete'];
 export default function ApiKeys() {
   const [apiKeys, setApiKeys] = useState([]);
   const [contentTypes, setContentTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', scopes: [], maxRequests: 100, windowMs: 60000 });
   const [newKey, setNewKey] = useState(null);
   const [copied, setCopied] = useState(false);
   const [usageData, setUsageData] = useState(null);
-  const [usageLoading, setUsageLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -23,8 +22,7 @@ export default function ApiKeys() {
     ]).then(([keys, cts]) => {
       setApiKeys(keys.data || []);
       setContentTypes(cts.data || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {});
   }, []);
 
   const toggleScope = (slug, perm) => {
@@ -77,8 +75,6 @@ export default function ApiKeys() {
     await api.delete(`/api/v1/api-keys/${id}`);
     setApiKeys(apiKeys.filter(k => k._id !== id));
   };
-
-  const isAllWild = form.scopes.some(s => s.contentType === '*all');
 
   return (
     <PageShell
@@ -202,7 +198,7 @@ export default function ApiKeys() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button onClick={async () => { setUsageLoading(true); setUsageData(null); try { const r = await api.get(`/api/v1/api-keys/${k._id}/usage?days=7`); setUsageData(r.data); } catch {} setUsageLoading(false); }} className="btn-ghost" style={{ padding: '8px', color: '#8b5cf6' }}>
+                <button onClick={async () => { setUsageData(null); try { const r = await api.get(`/api/v1/api-keys/${k._id}/usage?days=7`); setUsageData(r.data); } catch { /* empty */ } }} className="btn-ghost" style={{ padding: '8px', color: '#8b5cf6' }}>
                   <BarChart3 style={{ width: '14px', height: '14px' }} />
                 </button>
                 <button onClick={() => handleDelete(k._id)} className="btn-ghost" style={{ padding: '8px', color: '#fca5a5' }}>

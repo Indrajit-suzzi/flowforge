@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Activity, Clock, BarChart3, TrendingUp, Zap } from 'lucide-react';
+import { Activity, Clock, BarChart3, TrendingUp, Zap } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
-import FilterBar from '../components/FilterBar';
 
 export default function Analytics() {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState('7d');
 
   useEffect(() => {
-    setLoading(true);
     api.get(`/api/v1/analytics?period=${period}`).then(r => {
       setData(r.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {});
   }, [period]);
 
   const successRate = data?.totalRequests ? ((data.successfulRequests / data.totalRequests) * 100).toFixed(1) : 0;

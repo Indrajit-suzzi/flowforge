@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Layers, Key, FileText, ArrowRight, BarChart3, Sparkles, Download, Activity, Clock, CheckCircle, Shield, User, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Plus, Layers, Key, FileText, ArrowRight, BarChart3, Sparkles, Download, Activity, Clock, CheckCircle, Shield, User, Eye } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import { useRole } from '../hooks/useRole';
@@ -12,10 +12,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [activities, setActivities] = useState([]);
   const [health, setHealth] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data),
       api.get('/api/v1/api-keys').then(r => r.data).catch(() => []),
@@ -31,7 +29,7 @@ export default function Dashboard() {
     }).catch(() => {
       setContentTypes([]);
       setApiKeys([]);
-    }).finally(() => setLoading(false));
+    });
   }, []);
 
   const actionLabel = (action) => {

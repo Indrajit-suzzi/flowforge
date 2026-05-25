@@ -1,21 +1,9 @@
 import { useUser } from '@clerk/clerk-react';
-import { useLocalAuth } from '../contexts/AuthContext';
+import { useLocalAuth } from '../contexts/useLocalAuth';
 
 export function useCurrentUser() {
-  let clerk = { user: null, isLoaded: false };
-  let local = { user: null, loading: false };
-
-  try {
-    clerk = useUser();
-  } catch {
-    // Clerk not available
-  }
-
-  try {
-    local = useLocalAuth();
-  } catch {
-    // Local auth not available
-  }
+  const clerk = useUser();
+  const local = useLocalAuth();
 
   const isClerk = !!(clerk.isLoaded && clerk.user);
 

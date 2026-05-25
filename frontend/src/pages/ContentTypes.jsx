@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ArrowLeft, LayoutTemplate, Search, Layers, Sparkles, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3 } from 'lucide-react';
+import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3 } from 'lucide-react';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -9,7 +9,6 @@ import FilterBar from '../components/FilterBar';
 export default function ContentTypes() {
   const [contentTypes, setContentTypes] = useState([]);
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -25,15 +24,13 @@ export default function ContentTypes() {
   const [importSchemaResult, setImportSchemaResult] = useState(null);
 
   useEffect(() => { 
-    setLoading(true);
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data || []),
       api.get('/api/v1/content-types/templates').then(r => r.data || [])
     ]).then(([cts, temps]) => {
       setContentTypes(cts);
       setTemplates(temps);
-      setLoading(false);
-    }).catch(() => setLoading(false)); 
+    }).catch(() => {}); 
   }, []);
 
   const handleSubmit = async (e) => {

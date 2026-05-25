@@ -14,16 +14,14 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const userName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Unknown';
 
   useEffect(() => {
-    loadComments();
+    (async () => {
+      try {
+        const { data } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
+        setComments(data);
+      } catch { /* ignore */ }
+      setLoading(false);
+    })();
   }, [slug, entryId]);
-
-  const loadComments = async () => {
-    try {
-      const { data } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
-      setComments(data);
-    } catch { /* ignore */ }
-    setLoading(false);
-  };
 
   const handleSubmit = async () => {
     if (!newBody.trim()) return;
@@ -37,7 +35,8 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
       });
       setNewBody('');
       setReplyTo(null);
-      await loadComments();
+      const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
+      setComments(updated);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to post comment');
     } finally {
@@ -49,7 +48,8 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
     if (!confirm('Delete this comment?')) return;
     try {
       await api.delete(`/api/v1/comments/${slug}/${entryId}/${commentId}`);
-      await loadComments();
+      const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
+      setComments(updated);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete comment');
     }
@@ -107,7 +107,6 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
                   formatTime={formatTime}
                   slug={slug}
                   entryId={entryId}
-                  loadComments={loadComments}
                 />
               ))}
             </div>
@@ -150,7 +149,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   );
 }
 
-function CommentCard({ comment, replies, replyTo, setReplyTo, userId, onDelete, formatTime, slug, entryId, loadComments }) {
+function CommentCard({ comment, replies, replyTo, setReplyTo, userId, onDelete, formatTime }) {
   const [showReplies, setShowReplies] = useState(true);
   return (
     <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
