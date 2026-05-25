@@ -60,6 +60,15 @@ export default function Navbar() {
 
   const closeAll = useCallback(() => { setOpenCat(null); setUserOpen(false); }, []);
 
+  const handleSignOut = () => {
+    if (clerkUser) {
+      clerkSignOut({ redirectUrl: '/' });
+    } else {
+      localLogout();
+      navigate('/');
+    }
+  };
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setOpenCat(null); setUserOpen(false); setMobileOpen(false); }, [location.pathname]);
 
@@ -258,7 +267,7 @@ export default function Navbar() {
             <Settings style={{ width: '14px', height: '14px' }} /> Settings
           </Link>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '4px', paddingTop: '4px' }}>
-            <button onClick={() => clerkUser ? clerkSignOut({ redirectUrl: '/' }) : localLogout()} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px', fontSize: '13px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s' }}
+            <button onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px', fontSize: '13px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.paddingLeft = '18px'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '14px'; }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign out
@@ -338,7 +347,7 @@ export default function Navbar() {
                   <Settings style={{ width: '16px', height: '16px' }} /> Settings
                 </Link>
               )}
-              <button onClick={() => { clerkUser ? clerkSignOut({ redirectUrl: '/' }) : localLogout(); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', fontSize: '14px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>
+              <button onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', fontSize: '14px', color: '#fca5a5', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>
                 <LogOut style={{ width: '16px', height: '16px' }} /> Sign out
               </button>
             </div>
