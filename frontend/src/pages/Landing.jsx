@@ -218,9 +218,9 @@ function InteractiveOrb() {
   }, [hovered]);
 
   return (
-    <div style={{ position: 'relative', width: '450px', height: '450px' }}>
+    <div className="interactive-orb">
       <canvas ref={canvasRef} style={{ display: 'block', cursor: 'grab' }} />
-      <div style={{ 
+      <div className="orb-ring orb-ring-dashed" style={{ 
         position: 'absolute', 
         top: '50%', 
         left: '50%', 
@@ -232,7 +232,7 @@ function InteractiveOrb() {
         pointerEvents: 'none',
         animation: 'spin 40s linear infinite'
       }} />
-      <div style={{ 
+      <div className="orb-ring orb-ring-solid" style={{ 
         position: 'absolute', 
         top: '50%', 
         left: '50%', 
@@ -460,7 +460,7 @@ export default function Landing() {
             </a>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="landing-auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Link to="/sign-in" style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', padding: '10px 20px', transition: 'color 0.2s', textDecoration: 'none' }}>
               Sign In
             </Link>
@@ -515,11 +515,12 @@ export default function Landing() {
             
             {/* Left Column: Copy */}
             <motion.div
+              className="hero-copy"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255, 126, 95, 0.08)', border: '1px solid rgba(255, 126, 95, 0.2)', borderRadius: '30px', marginBottom: '24px' }}>
+              <div className="hero-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255, 126, 95, 0.08)', border: '1px solid rgba(255, 126, 95, 0.2)', borderRadius: '30px', marginBottom: '24px' }}>
                 <Sparkles style={{ width: '14px', height: '14px', color: '#ff7e5f' }} />
                 <span className="landing-font-heading" style={{ fontSize: '12px', fontWeight: '700', color: '#ff7e5f', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   Revolutionary Headless CMS
@@ -538,7 +539,7 @@ export default function Landing() {
                 An elegant, multi-tenant headless CMS that auto-generates schemas, manages secure scoped API keys, and streams content securely to any application.
               </p>
               
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div className="hero-actions" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 <Link to="/sign-up" className="btn-primary-peach" style={{ padding: '16px 32px', fontSize: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   Deploy Workspace <ArrowRight style={{ width: '18px', height: '18px' }} />
                 </Link>
@@ -550,6 +551,7 @@ export default function Landing() {
 
             {/* Right Column: Interactive 3D Canvas */}
             <motion.div
+              className="hero-orb-wrap"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               style={{ 
@@ -972,6 +974,7 @@ export default function Landing() {
           </a>
         </div>
       </footer>
+
     </div>
   );
 }

@@ -106,6 +106,12 @@
   will-change: transform;
 }
 
+.interactive-orb {
+  position: relative;
+  width: 450px;
+  height: 450px;
+}
+
 /* Glassmorphism Navigation */
 .glass-header {
   position: fixed;
@@ -506,6 +512,9 @@
     padding-top: 120px;
     padding-bottom: 60px;
   }
+  .hero-actions {
+    justify-content: center;
+  }
   .playground-grid {
     grid-template-columns: 1fr;
     gap: 50px;
@@ -536,15 +545,92 @@
   .desktop-nav {
     display: none !important;
   }
+  .landing-auth-actions > a {
+    display: none !important;
+  }
   .mobile-nav-toggle {
     display: flex;
   }
+  .landing-auth-actions {
+    gap: 0 !important;
+  }
+  .hero-section {
+    min-height: auto !important;
+    padding: 108px 0 56px;
+  }
+  .hero-grid {
+    gap: 34px;
+  }
+  .hero-orb-wrap {
+    margin-top: -8px;
+    transform-origin: top center;
+  }
+  .interactive-orb {
+    width: min(360px, 88vw) !important;
+    height: min(360px, 88vw) !important;
+    margin: 0 auto;
+  }
+  .interactive-orb canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .orb-ring-dashed {
+    width: 62% !important;
+    height: 62% !important;
+  }
+  .orb-ring-solid {
+    width: 72% !important;
+    height: 72% !important;
+  }
+  .stats-section {
+    padding: 28px 0;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+  }
+  .features-section,
+  .how-it-works-section,
+  .playground-section,
+  .cta-section {
+    padding: 64px 0;
+  }
+  .features-section .section-container > div:first-child,
+  .how-it-works-section .section-container > div:first-child {
+    margin-bottom: 44px !important;
+  }
   .features-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr !important;
+    gap: 18px;
   }
   .how-it-works-grid {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 20px;
+  }
+  .playground-grid {
+    gap: 36px;
+  }
+  .terminal-header {
+    padding: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .terminal-tab {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .terminal-body {
+    min-height: 220px !important;
+  }
+  .cta-box {
+    border-radius: 22px;
+  }
+  .cta-box::before {
+    border-radius: 22px;
+  }
+  .footer-section .header-inner {
+    justify-content: center !important;
+    text-align: center;
   }
   .scroll-indicator {
     display: none !important;
@@ -553,32 +639,130 @@
 
 @media (max-width: 640px) {
   .section-container {
-    padding: 0 16px;
+    padding: 0 18px;
   }
   .header-inner {
-    padding: 0 16px;
+    padding: 0 18px;
   }
   .hero-section {
-    padding-top: 100px;
+    padding-top: 96px;
+  }
+  .hero-eyebrow {
+    max-width: 100%;
+    justify-content: center;
+    padding: 7px 12px !important;
+  }
+  .hero-eyebrow span {
+    font-size: 10px !important;
+    letter-spacing: 0.6px !important;
+    white-space: normal;
   }
   .hero-grid h1 {
-    font-size: 2.2rem;
+    font-size: 2.45rem !important;
+    line-height: 1.04;
+    margin-bottom: 18px !important;
   }
   .hero-grid p {
-    font-size: 15px;
-    margin-bottom: 24px;
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    margin-bottom: 28px !important;
+    max-width: 34rem !important;
   }
-  .cta-box h2 {
-    font-size: 1.8rem !important;
+  .hero-actions {
+    width: 100%;
+    gap: 12px !important;
   }
-  .cta-box p {
-    font-size: 14px;
+  .hero-actions a {
+    flex: 1 1 100%;
+    justify-content: center;
+    padding: 14px 18px !important;
+  }
+  .interactive-orb {
+    width: min(300px, 82vw) !important;
+    height: min(300px, 82vw) !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .stats-grid > div {
+    padding: 16px;
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+  .features-grid > div .glass-card,
+  .how-it-works-grid > div > div,
+  .glass-card-sm {
+    border-radius: 18px !important;
+  }
+  .features-grid > div .glass-card {
+    padding: 28px 22px !important;
+  }
+  .tilt-card-inner {
+    transform: none;
+  }
+  .playground-grid h2,
+  .features-section h2,
+  .how-it-works-section h2 {
+    font-size: 1.85rem !important;
+    line-height: 1.12;
   }
   .terminal-window {
-    margin: 0 -8px;
+    margin: 0;
+    border-radius: 14px;
+  }
+  .terminal-header > div:nth-child(2) {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-top: 2px;
+  }
+  .terminal-header button {
+    flex: 1 0 auto;
+  }
+  .terminal-tab {
+    order: 2;
+    width: auto;
   }
   .terminal-body {
     padding: 16px;
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.65;
+  }
+  .cta-box {
+    padding: 34px 20px;
+  }
+  .cta-box h2 {
+    font-size: 1.8rem !important;
+    line-height: 1.12;
+  }
+  .cta-box p {
+    font-size: 14px !important;
+    margin-bottom: 28px !important;
+  }
+  .cta-box a {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 18px !important;
+  }
+  .footer-section .header-inner {
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-grid h1 {
+    font-size: 2.15rem !important;
+  }
+  .interactive-orb {
+    width: min(260px, 78vw) !important;
+    height: min(260px, 78vw) !important;
+  }
+  .section-container,
+  .header-inner {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 }
