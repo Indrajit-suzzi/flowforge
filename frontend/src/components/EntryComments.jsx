@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Send, Trash2, MessageSquare, Reply } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import { useUser } from '@clerk/clerk-react';
 
@@ -9,6 +10,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const [newBody, setNewBody] = useState('');
   const [replyTo, setReplyTo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
   const { user } = useUser();
   const userId = user?.id;
   const userName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Unknown';
@@ -38,7 +40,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
       const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
       setComments(updated);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to post comment');
+      toast.error(err.response?.data?.message || 'Failed to post comment');
     } finally {
       setSubmitting(false);
     }
@@ -51,7 +53,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
       const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
       setComments(updated);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete comment');
+      toast.error(err.response?.data?.message || 'Failed to delete comment');
     }
   };
 

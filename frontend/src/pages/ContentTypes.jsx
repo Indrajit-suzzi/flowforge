@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3, Search, Asterisk } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -16,6 +17,7 @@ const FIELD_TYPE_COLORS = {
 };
 
 export default function ContentTypes() {
+  const toast = useToast();
   const [contentTypes, setContentTypes] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -252,14 +254,14 @@ export default function ContentTypes() {
                     loading={importingSchema}
                     onClick={async () => {
                       let data;
-                      try { data = JSON.parse(importSchemaJson); } catch { alert('Invalid JSON'); return; }
-                      if (!data.name || !data.slug || !data.fields) { alert('Schema must include name, slug, and fields'); return; }
+                      try { data = JSON.parse(importSchemaJson); } catch { toast.error('Invalid JSON'); return; }
+                      if (!data.name || !data.slug || !data.fields) { toast.warning('Schema must include name, slug, and fields'); return; }
                       setImportingSchema(true);
                       try {
                         const res = await api.post('/api/v1/content-types/import/json', data);
                         setImportSchemaResult(res.data);
                       } catch (err) {
-                        alert(err.response?.data?.message || 'Import failed');
+                        toast.error(err.response?.data?.message || 'Import failed');
                       } finally {
                         setImportingSchema(false);
                       }

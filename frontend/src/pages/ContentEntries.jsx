@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import RichTextEditor from '../components/RichTextEditor';
 import LoadingButton from '../components/LoadingButton';
@@ -15,6 +16,7 @@ import { useEntryLock } from '../hooks/useEntryLock';
 import Pagination from '../components/Pagination';
 
 export default function ContentEntries() {
+  const toast = useToast();
   const { slug } = useParams();
   const [contentType, setContentType] = useState(null);
   const [entries, setEntries] = useState([]);
@@ -413,7 +415,7 @@ export default function ContentEntries() {
                             await api.post(`/api/v1/dynamic/${slug}/${editingEntry._id}/transition`, { stage: stage.name });
                             setForm({ ...form, workflowStage: stage.name, status: stage.name === 'Published' ? 'published' : 'draft' });
                           } catch (err) {
-                            alert(err.response?.data?.message || 'Transition failed');
+                            toast.error(err.response?.data?.message || 'Transition failed');
                           }
                         }}
                         style={{
@@ -595,7 +597,7 @@ export default function ContentEntries() {
               loading={bulkEditing}
               onClick={async () => {
                 const updates = Object.fromEntries(Object.entries(bulkEditForm).filter(([, v]) => v !== undefined && v !== '' && v !== null));
-                if (!Object.keys(updates).length) { alert('No fields to update'); return; }
+                if (!Object.keys(updates).length) { toast.warning('No fields to update'); return; }
                 setBulkEditing(true);
                 try {
                   await api.patch(`/api/v1/dynamic/${slug}/bulk`, { ids: selected, updates });
@@ -604,7 +606,7 @@ export default function ContentEntries() {
                   const r = await api.get(`/api/v1/dynamic/${slug}`);
                   setEntries(r.data?.data || r.data || []);
                 } catch (err) {
-                  alert(err.response?.data?.error || 'Bulk edit failed');
+                  toast.error(err.response?.data?.error || 'Bulk edit failed');
                 } finally {
                   setBulkEditing(false);
                 }
@@ -690,7 +692,7 @@ export default function ContentEntries() {
                   loading={importing}
                   onClick={async () => {
                     let data;
-                    try { data = JSON.parse(importJson); } catch { alert('Invalid JSON'); return; }
+                    try { data = JSON.parse(importJson); } catch { toast.error('Invalid JSON'); return; }
                     setImporting(true);
                     try {
                       const res = await api.post(`/api/v1/dynamic/${slug}/import`, data);

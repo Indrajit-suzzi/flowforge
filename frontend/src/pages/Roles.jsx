@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, Plus, Trash2, Edit2, Check, X, Save } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -18,6 +19,7 @@ const allFeatures = [
 ];
 
 export default function Roles() {
+  const toast = useToast();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,20 +48,20 @@ export default function Roles() {
       const r = await api.get('/api/v1/roles');
       setRoles(r.data || []);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save role');
+      toast.error(err.response?.data?.message || 'Failed to save role');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (role) => {
-    if (role.isSystem) { alert('Cannot delete system roles'); return; }
+    if (role.isSystem) { toast.warning('Cannot delete system roles'); return; }
     if (!confirm(`Delete role "${role.name}"?`)) return;
     try {
       await api.delete(`/api/v1/roles/${role._id}`);
       setRoles(roles.filter(r => r._id !== role._id));
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete role');
+      toast.error(err.response?.data?.message || 'Failed to delete role');
     }
   };
 

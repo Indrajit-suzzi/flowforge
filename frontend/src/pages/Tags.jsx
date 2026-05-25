@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Tag as TagIcon } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import LoadingButton from '../components/LoadingButton';
@@ -7,6 +8,7 @@ import LoadingButton from '../components/LoadingButton';
 const TAG_COLORS = ['#8b5cf6', '#ff7e5f', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
 
 export default function Tags() {
+  const toast = useToast();
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState('');
@@ -43,7 +45,7 @@ export default function Tags() {
       await loadTags();
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || `Request failed (${err.response?.status || 'network error'})`;
-      alert(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
@@ -56,7 +58,7 @@ export default function Tags() {
       await loadTags();
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || `Request failed (${err.response?.status || 'network error'})`;
-      alert(msg);
+      toast.error(msg);
     }
   };
 

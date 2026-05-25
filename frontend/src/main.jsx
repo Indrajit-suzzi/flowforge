@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { ClerkProvider } from '@clerk/clerk-react'
 import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
 import './index.css'
 import App from './App.jsx'
 
@@ -31,7 +32,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ClerkWithRouter>
         <AuthProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </AuthProvider>
       </ClerkWithRouter>
     </BrowserRouter>
