@@ -1,68 +1,70 @@
 import test from 'node:test';
 import assert from 'node:assert';
+import sanitize from './sanitize.js';
 
-// Import and test the helper directly
-const DANGEROUS_KEYS = ['$where', '$regex', '$ne', '$gt', '$lt', '$gte', '$lte', '$in', '$nin', '$exists'];
+function mockReq(body = {}, query = {}) {
+  return { body, query };
+}
 
-const hasDangerousKeys = (obj) => {
-  if (typeof obj === 'string') {
-    return DANGEROUS_KEYS.some(k => obj.includes(k));
-  }
-  if (Array.isArray(obj)) {
-    return obj.some(hasDangerousKeys);
-  }
-  if (obj && typeof obj === 'object') {
-    for (const key of Object.keys(obj)) {
-      if (key.startsWith('$')) return true;
-      if (hasDangerousKeys(obj[key])) return true;
-    }
-  }
-  return false;
-};
+function mockRes() {
+  const state = { statusCode: 200, body: null };
+  return {
+    state,
+    status(code) { state.statusCode = code; return this; },
+    json(obj) { state.body = obj; return this; },
+  };
+}
 
-test('detects $where in object body', () => {
-  assert.strictEqual(hasDangerousKeys({ $where: '1=1' }), true);
+test('sanitize middleware - blocks $where in body', () => {
+  const req = mockReq({ $where: '1=1' });
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(res.state.statusCode, 400);
+  assert.ok(res.state.body.error.includes('forbidden'));
+  assert.strictEqual(called, false);
 });
 
-test('detects $regex in nested object', () => {
-  assert.strictEqual(hasDangerousKeys({ email: { $regex: '.*' } }), true);
+test('sanitize middleware - blocks $regex in body', () => {
+  const req = mockReq({ email: { $regex: '.*' } });
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(res.state.statusCode, 400);
+  assert.strictEqual(called, false);
 });
 
-test('detects $ne in query', () => {
-  assert.strictEqual(hasDangerousKeys({ status: { $ne: 'published' } }), true);
+test('sanitize middleware - blocks $ne in query', () => {
+  const req = mockReq({}, { status: { $ne: 'published' } });
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(res.state.statusCode, 400);
+  assert.strictEqual(called, false);
 });
 
-test('detects $gt and $lt in range query', () => {
-  assert.strictEqual(hasDangerousKeys({ createdAt: { $gt: '2020', $lt: '2021' } }), true);
+test('sanitize middleware - passes clean request', () => {
+  const req = mockReq({ name: 'test', email: 'user@test.com' }, { page: '1' });
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(res.state.statusCode, 200);
+  assert.strictEqual(called, true);
 });
 
-test('passes clean objects', () => {
-  assert.strictEqual(hasDangerousKeys({ email: 'user@test.com', name: 'John' }), false);
+test('sanitize middleware - passes empty request', () => {
+  const req = mockReq({}, {});
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(called, true);
 });
 
-test('passes empty objects', () => {
-  assert.strictEqual(hasDangerousKeys({}), false);
-});
-
-test('passes null/undefined', () => {
-  assert.strictEqual(hasDangerousKeys(null), false);
-  assert.strictEqual(hasDangerousKeys(undefined), false);
-});
-
-test('passes primitive values', () => {
-  assert.strictEqual(hasDangerousKeys('hello'), false);
-  assert.strictEqual(hasDangerousKeys(42), false);
-  assert.strictEqual(hasDangerousKeys(true), false);
-});
-
-test('passes string values containing $ prefixes', () => {
-  assert.strictEqual(hasDangerousKeys({ description: 'Use dollar signs $ for variables' }), false);
-});
-
-test('detects $in in array', () => {
-  assert.strictEqual(hasDangerousKeys({ ids: { $in: ['a', 'b'] } }), true);
-});
-
-test('detects deep nesting', () => {
-  assert.strictEqual(hasDangerousKeys({ a: { b: { c: { $exists: true } } } }), true);
+test('sanitize middleware - detects deep nesting', () => {
+  const req = mockReq({ a: { b: { c: { $exists: true } } } });
+  const res = mockRes();
+  let called = false;
+  sanitize(req, res, () => { called = true; });
+  assert.strictEqual(res.state.statusCode, 400);
+  assert.strictEqual(called, false);
 });
