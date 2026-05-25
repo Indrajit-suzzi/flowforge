@@ -69,7 +69,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '32px' }}>
+      <div className="grid-2" style={{ marginBottom: '32px' }}>
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 className="section-heading" style={{ marginBottom: '16px' }}>
             <BarChart3 style={{ width: '14px', height: '14px', color: '#ff7e5f' }} /> Requests by Day
@@ -102,7 +102,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+      <div className="grid-2">
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 className="section-heading" style={{ marginBottom: '16px' }}>Top Endpoints</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

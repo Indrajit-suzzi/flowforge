@@ -238,7 +238,7 @@ export default function Webhooks() {
             </div>
             <div style={{ marginBottom: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>Event Conditions <span style={{ color: '#475569', fontWeight: 400 }}>(optional — filter which entries trigger this webhook)</span></label>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                 <input value={conditionField} onChange={e => setConditionField(e.target.value)} placeholder="Field name (e.g. status)" className="input-field" style={{ flex: '1' }} />
                 <select value={conditionOp} onChange={e => setConditionOp(e.target.value)} className="select-field" style={{ width: '120px' }}>
                   <option value="equals">equals</option>
@@ -282,7 +282,7 @@ export default function Webhooks() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {webhooks.map(w => (
             <div key={w._id} className="glass-card-sm" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px', flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>

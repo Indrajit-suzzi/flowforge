@@ -181,3 +181,33 @@
   background: rgba(239, 68, 68, 0.08);
   padding-left: 18px;
 }
+
+/* Mobile hamburger toggle — hidden on desktop */
+.mobile-nav-toggle {
+  display: none;
+}
+
+/* Mobile drawer */
+.mobile-drawer {
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-drawer a,
+.mobile-drawer button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Responsive: tablet & mobile */
+@media (max-width: 768px) {
+  .desktop-nav-items {
+    display: none !important;
+  }
+
+  .desktop-search {
+    display: none !important;
+  }
+
+  .mobile-nav-toggle {
+    display: flex !important;
+  }
+}

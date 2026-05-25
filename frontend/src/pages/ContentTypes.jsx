@@ -129,7 +129,7 @@ export default function ContentTypes() {
           <div className="glass-card modal-content" style={{ padding: '28px', maxWidth: '800px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>Choose a Template</h3>
-              <div style={{ position: 'relative', width: '260px' }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '260px' }}>
                 <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#475569' }} />
                 <input
                   value={templateSearch}
@@ -322,7 +322,7 @@ export default function ContentTypes() {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <input value={fieldName} onChange={e => setFieldName(e.target.value)} placeholder="Field name" className="input-field" style={{ flex: 1 }} />
               <select value={fieldType} onChange={e => setFieldType(e.target.value)} className="select-field">
                 {['String', 'Number', 'Date', 'Boolean', 'RichText', 'Reference'].map(t => <option key={t} value={t}>{t}</option>)}
@@ -408,7 +408,7 @@ export default function ContentTypes() {
               {form.workflowEnabled && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {form.workflowStages.map((stage, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <input type="color" value={stage.color} onChange={e => { const s = [...form.workflowStages]; s[i] = { ...s[i], color: e.target.value }; setForm({ ...form, workflowStages: s }); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', cursor: 'pointer', padding: 0 }} />
                       <input value={stage.name} onChange={e => { const s = [...form.workflowStages]; s[i] = { ...s[i], name: e.target.value }; setForm({ ...form, workflowStages: s }); }} placeholder="Stage name" className="input-field" style={{ flex: 1, fontSize: '12px', padding: '6px 10px' }} />
                       {i === form.workflowStages.length - 1 ? (
@@ -434,7 +434,7 @@ export default function ContentTypes() {
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search content types..."
-        searchWidth="300px"
+        searchWidth="200px"
         filters={[]}
       />
 

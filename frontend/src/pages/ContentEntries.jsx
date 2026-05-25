@@ -440,7 +440,7 @@ export default function ContentEntries() {
               <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Clock style={{ width: '14px', height: '14px' }} /> Scheduled Publishing
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="grid-2">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Publish at</label>
                   <input type="datetime-local" value={form.scheduledPublishAt || ''} onChange={e => setForm({ ...form, scheduledPublishAt: e.target.value })} className="input-field" disabled={editingEntry && lock && !lock.acquired} />

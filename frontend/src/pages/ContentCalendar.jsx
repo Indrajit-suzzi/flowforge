@@ -131,7 +131,7 @@ export default function ContentCalendar() {
                     key={i}
                     onClick={() => day && openDay(day)}
                     style={{
-                      minHeight: '90px', padding: '6px', borderRadius: '8px', cursor: day ? 'pointer' : 'default',
+                      minHeight: 'clamp(60px, 12vw, 90px)', padding: '6px', borderRadius: '8px', cursor: day ? 'pointer' : 'default',
                       background: day
                         ? isToday ? 'rgba(255,126,95,0.08)' : 'rgba(8,5,17,0.4)'
                         : 'transparent',

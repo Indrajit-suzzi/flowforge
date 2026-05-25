@@ -126,14 +126,14 @@ export default function Settings() {
           Notifications
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
-          <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px' }}>
+          <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px', flexWrap: 'wrap' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Email Notifications</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Receive updates and alerts via email</p>
             </div>
             <Toggle checked={notifications.email} onChange={e => setNotifications({ ...notifications, email: e.target.checked })} label="Toggle email notifications" />
           </div>
-          <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px' }}>
+          <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px', flexWrap: 'wrap' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Webhook Alerts</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Send real-time alerts to configured webhooks</p>
@@ -177,7 +177,7 @@ export default function Settings() {
           </div>
           Branding
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+        <div className="grid-2" style={{ marginBottom: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Primary Color</label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -261,21 +261,21 @@ export default function Settings() {
           Danger Zone
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Delete Account</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Permanently delete your account and all associated data</p>
             </div>
             <button onClick={() => setConfirm({ title: 'Delete Account', message: 'This will permanently delete your account and all associated data. This action cannot be undone.', label: 'Delete', action: async () => { await api.delete('/api/v1/users/me'); window.location.href = '/sign-in'; } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Delete</button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Revoke All API Keys</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Invalidate all active API keys immediately</p>
             </div>
             <button onClick={() => setConfirm({ title: 'Revoke All API Keys', message: 'This will invalidate all active API keys. Any services using these keys will lose access immediately.', label: 'Revoke', action: async () => { await api.post('/api/v1/users/me/revoke-keys'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Revoke</button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Reset Scheduler</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Clear all scheduled publish/unpublish jobs</p>

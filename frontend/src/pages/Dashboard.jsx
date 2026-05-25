@@ -131,7 +131,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+      <div className="grid-2" style={{ marginBottom: '24px' }}>
         {/* Content Breakdown */}
         {stats && stats.breakdown && (
           <div className="glass-card" style={{ padding: '24px' }}>

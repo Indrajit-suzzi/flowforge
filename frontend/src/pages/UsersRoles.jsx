@@ -95,13 +95,13 @@ export default function UsersRoles() {
         <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: "var(--font-heading)", marginBottom: '20px' }}>{editingUser ? 'Edit User' : 'Create User'}</h3>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: editingUser ? '1fr 1fr' : '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div className="grid-2" style={{ marginBottom: '16px' }}>
               <input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="Username" className="input-field" required disabled={!!editingUser} />
               <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="input-field" required disabled={!!editingUser} />
               {!editingUser && <input value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Password" type="password" className="input-field" required />}
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} className="select-field" style={{ width: '200px' }}>
+              <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} className="select-field">
                 {roles.map(r => (
                   <option key={r.slug} value={r.slug}>{r.name}</option>
                 ))}

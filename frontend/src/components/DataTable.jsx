@@ -31,7 +31,7 @@ export default function DataTable({
   const rowGridCols = hasSelection ? `40px ${gridTemplateColumns}` : gridTemplateColumns;
 
   return (
-    <div className="glass-card data-table" style={{ overflow: 'hidden' }}>
+    <div className="glass-card data-table" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
       {/* Table header */}
       <div
         className="data-table-header"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info } from 'lucide-react';
+import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info, Menu, X } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -85,6 +85,7 @@ export default function ApiDocs() {
   const [copied, setCopied] = useState(null);
   const [activeSection, setActiveSection] = useState('getting-started');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     api.get('/api/v1/docs')
@@ -191,6 +192,7 @@ const posts = await client.get('/dynamic/blog');`;
 }`;
 
   return (
+    <>
     <PageShell
       title="API Documentation"
       subtitle="Complete reference for the FlowForge API"
@@ -204,7 +206,7 @@ const posts = await client.get('/dynamic/blog');`;
     >
       <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
         {/* Sidebar */}
-        <div style={{ width: '220px', flexShrink: 0, position: 'sticky', top: '100px', alignSelf: 'start' }}>
+        <div className={`api-docs-sidebar${sidebarOpen ? ' open' : ''}`} style={{ width: '220px', flexShrink: 0, position: 'sticky', top: '100px', alignSelf: 'start' }}>
           <div className="glass-card" style={{ padding: '16px' }}>
             <div style={{ marginBottom: '12px', padding: '0 4px' }}>
               <p style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Navigation</p>
@@ -247,7 +249,20 @@ const posts = await client.get('/dynamic/blog');`;
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="api-docs-content" style={{ flex: 1, minWidth: 0 }}>
+          <button 
+            className="api-docs-mobile-toggle" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{ 
+              position: 'sticky', top: '0', zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(255,126,95,0.1)', border: '1px solid rgba(255,126,95,0.2)',
+              color: '#ff7e5f', cursor: 'pointer', marginBottom: '12px'
+            }}
+          >
+            {sidebarOpen ? <X style={{ width: '18px', height: '18px' }} /> : <Menu style={{ width: '18px', height: '18px' }} />}
+          </button>
           {/* Getting Started */}
           {activeSection === 'getting-started' && (
             <div>
@@ -1066,5 +1081,15 @@ const posts = await client.get('/dynamic/blog');`;
         </div>
       </div>
     </PageShell>
+      <style>{`
+@media (max-width: 768px) {
+  .api-docs-sidebar { display: none; }
+  .api-docs-sidebar.open { display: block; position: fixed; left: 0; top: 70px; bottom: 0; width: 260px; z-index: 50; background: rgba(8,5,17,0.98); overflow-y: auto; padding: 20px; border-right: 1px solid rgba(255,255,255,0.08); }
+  .api-docs-mobile-toggle { display: flex !important; }
+  .api-docs-content { margin-left: 0 !important; }
+}
+.api-docs-mobile-toggle { display: none; }
+      `}</style>
+    </>
   );
 }
