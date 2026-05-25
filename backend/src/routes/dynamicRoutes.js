@@ -30,7 +30,7 @@ const saveVersion = async ({ tenantId, contentTypeSlug, contentTypeName, entryId
   });
 };
 
-const populateReferences = async (entries, ct, locale) => {
+const populateReferences = async (entries, ct, _locale) => {
   const refFields = ct.fields.filter(f => f.type === 'Reference');
   if (!refFields.length) return entries;
 
@@ -46,7 +46,7 @@ const populateReferences = async (entries, ct, locale) => {
     const refEntries = await refModel.find({ _id: { $in: ids }, tenantId: ct.tenantId });
     const refMap = {};
     for (const ref of refEntries) {
-      let display = ref[refCt.fields[0]?.name] || ref._id;
+      const _display = ref[refCt.fields[0]?.name] || ref._id;
       refMap[ref._id.toString()] = { _id: ref._id, ...(ref.toObject ? ref.toObject() : ref) };
     }
     for (const entry of list) {

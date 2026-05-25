@@ -53,6 +53,14 @@ const getModel = (name, schemaDefinition) => {
     }
   );
 
+  schema.index({ tenantId: 1, isDeleted: 1, createdAt: -1 });
+  schema.index({ tenantId: 1, status: 1, publishedAt: -1 });
+  schema.index({ tenantId: 1, scheduledPublishAt: 1 }, { sparse: true });
+  schema.index({ tenantId: 1, scheduledUnpublishAt: 1 }, { sparse: true });
+  schema.index({ tenantId: 1, tags: 1 });
+  schema.index({ tenantId: 1, locale: 1 });
+  schema.index({ tenantId: 1, workflowStage: 1 });
+  schema.index({ slug: 1, tenantId: 1 }, { unique: true, sparse: true });
 
   const model = mongoose.model(name, schema);
 

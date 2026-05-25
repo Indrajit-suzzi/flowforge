@@ -50,7 +50,7 @@ const keyRateLimit = () => {
     res.setHeader('X-RateLimit-Reset', current.resetTime);
 
     const originalSend = res.send;
-    const start = Date.now();
+    const _start = Date.now();
     res.send = function (...args) {
       KeyUsage.create({ keyId: apiKeyId, tenantId: req.apiKey.tenantId, method: req.method, path: req.originalUrl, statusCode: res.statusCode, timestamp: new Date() }).catch(() => {});
       return originalSend.apply(this, args);

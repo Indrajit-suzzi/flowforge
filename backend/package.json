@@ -6,7 +6,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "node --test src/models/genericModel.test.js"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +32,8 @@
     "ruru": "^1.0.0"
   },
   "devDependencies": {
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.0.0"
   }

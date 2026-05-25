@@ -50,7 +50,7 @@ router.get('/export', async (req, res) => {
       const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
       const Model = getModel(ct.name, schema);
       const entries = await Model.find({ tenantId: req.tenant, isDeleted: { $ne: true } }).lean();
-      result[ct.slug] = { name: ct.name, fields: ct.fields.map(f => f.name), entries: entries.map(e => { const { _id, __v, tenantId, ...rest } = e; return rest; }) };
+      result[ct.slug] = { name: ct.name, fields: ct.fields.map(f => f.name), entries: entries.map(e => { const { _id, __v, tenantId: _tenantId, ...rest } = e; return rest; }) };
     }
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="all-content.json"');

@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import mongoose from 'mongoose';
 import getModel from './genericModel.js';
 
 test('getModel includes tenantId in schema', () => {

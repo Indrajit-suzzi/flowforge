@@ -14,6 +14,9 @@ const mediaSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 mediaSchema.index({ tenantId: 1, createdAt: -1 });
+mediaSchema.index({ tenantId: 1, mimeType: 1 });
+mediaSchema.index({ tenantId: 1, type: 1 });
+mediaSchema.index({ tenantId: 1, name: 1 });
 
 const Media = mongoose.models.Media || mongoose.model('Media', mediaSchema);
 

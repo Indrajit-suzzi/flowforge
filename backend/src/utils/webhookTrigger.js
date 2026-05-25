@@ -105,7 +105,7 @@ export const triggerWebhooks = async ({ tenantId, event, contentType, data }) =>
   }
 };
 
-const sendPayload = async ({ webhook, event, contentType, payload }) => {
+const sendPayload = async ({ webhook, event, payload }) => {
   const start = Date.now();
   const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
   let status = 'failed', responseCode = null, responseBody = null, error = null;

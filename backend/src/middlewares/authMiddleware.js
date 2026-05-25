@@ -35,10 +35,10 @@ const authMiddleware = async (req, res, next) => {
         req.tenant = claims.sub;
         req.userRole = claims.metadata?.role || claims.public_metadata?.role || 'member';
         return next();
-      } catch (err) {
+    } catch (_err) {
         return res.status(401).json({
           message: "Invalid token",
-          reason: process.env.NODE_ENV === 'production' ? undefined : err.reason || err.message
+          reason: process.env.NODE_ENV === 'production' ? undefined : _err.reason || _err.message
         });
       }
     }
@@ -50,7 +50,7 @@ const authMiddleware = async (req, res, next) => {
       req.userRole = decoded.role || 'member';
       seedDefaultRoles(req.tenant).catch(() => {});
       return next();
-    } catch (err) {
+    } catch {
       return res.status(401).json({ message: "Invalid token" });
     }
   }

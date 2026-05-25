@@ -121,7 +121,7 @@ app.get("/api/v1/sitemap.xml", async (req, res) => {
       const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
       const Model = getModel(ct.name, schema);
       const entries = await Model.find({ tenantId, status: 'published', isDeleted: { $ne: true } }).sort({ updatedAt: -1 }).lean();
-      const labelField = ct.fields[0]?.name || 'id';
+      const _labelField = ct.fields[0]?.name || 'id';
       for (const entry of entries) {
         const updated = entry.updatedAt ? new Date(entry.updatedAt).toISOString() : '';
         urls += `<url><loc>https://flowforge.app/${ct.slug}/${entry._id}</loc><lastmod>${updated}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
@@ -131,7 +131,7 @@ app.get("/api/v1/sitemap.xml", async (req, res) => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
     res.setHeader('Content-Type', 'application/xml');
     res.send(xml);
-  } catch (err) {
+  } catch {
     res.status(500).send('Error generating sitemap');
   }
 });

@@ -13,6 +13,8 @@ const analyticsSchema = new mongoose.Schema({
 
 analyticsSchema.index({ tenantId: 1, createdAt: -1 });
 analyticsSchema.index({ tenantId: 1, endpoint: 1 });
+analyticsSchema.index({ tenantId: 1, method: 1, createdAt: -1 });
+analyticsSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 3600 });
 
 const Analytics = mongoose.models.Analytics || mongoose.model('Analytics', analyticsSchema);
 
