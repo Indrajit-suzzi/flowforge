@@ -7,8 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import TenantThemeProvider from './components/TenantThemeProvider';
 import { useRole } from './hooks/useRole';
 import { setAuthTokenGetter } from './utils/api';
-
-const Landing = lazy(() => import('./pages/Landing'));
+import Landing from './pages/Landing';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ContentTypes = lazy(() => import('./pages/ContentTypes'));
 const ContentEntries = lazy(() => import('./pages/ContentEntries'));
