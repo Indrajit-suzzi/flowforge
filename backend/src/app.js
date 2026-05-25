@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import fileUpload from 'express-fileupload';
 import { contentTemplates } from "./utils/contentTemplates.js";
+import logger from "./utils/logger.js";
+import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 
 import dynamicRoutes from "./routes/dynamicRoutes.js";
 import contentTypeRoutes from "./routes/contentTypeRoutes.js";
@@ -32,23 +35,35 @@ import { scopeMiddleware } from './middlewares/scopeMiddleware.js';
 
 const app = express();
 
+const corsOrigins = process.env.CORS_ORIGINS;
+app.use(helmet());
 app.use(cors({
-  origin: '*',
+  origin: corsOrigins ? corsOrigins.split(',').map(s => s.trim()) : ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tenant-Id'],
+  credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 app.use(rateLimit({ windowMs: 60000, max: 1000 }));
+
+app.use((req, _res, next) => {
+  req.log = logger.child({ reqId: req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+  next();
+});
+
+if (process.env.TRUST_PROXY) {
+  app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+}
 
 const clerkSecret = process.env.CLERK_SECRET_KEY;
 const clerkPublishable = process.env.CLERK_PUBLISHABLE_KEY;
 if (clerkSecret && clerkSecret !== 'your_clerk_secret_key_here' && clerkPublishable && clerkPublishable !== 'your_clerk_publishable_key_here') {
   const { clerkMiddleware } = await import('@clerk/express');
   app.use(clerkMiddleware({ publishableKey: clerkPublishable, secretKey: clerkSecret }));
-  console.log('Clerk authentication enabled');
+  logger.info('Clerk authentication enabled');
 } else {
-  console.log('Clerk not configured — using JWT fallback');
+  logger.info('Clerk not configured — using JWT fallback');
 }
 
 // Public templates endpoint
@@ -139,7 +154,12 @@ app.get("/api/v1/theme.css", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("FlowForge API running 🚀");
+  res.json({ name: 'FlowForge API', version: '1.0.0', status: 'running' });
 });
+
+app.use('/uploads', express.static('uploads'));
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

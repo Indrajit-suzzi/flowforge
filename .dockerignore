@@ -1,2 +1,14 @@
 node_modules
 .env
+.git
+.gitignore
+*.md
+dist
+uploads
+coverage
+.nyc_output
+.vscode
+.idea
+*.log
+Dockerfile
+docker-compose.yml

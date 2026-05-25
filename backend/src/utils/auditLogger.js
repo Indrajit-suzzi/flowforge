@@ -1,4 +1,5 @@
 import AuditLog from '../models/auditLog.js';
+import logger from './logger.js';
 
 export const logAudit = async ({ tenantId, userId, action, entityType, entityId, entityName, changes, ipAddress, userAgent }) => {
     try {
@@ -14,6 +15,6 @@ export const logAudit = async ({ tenantId, userId, action, entityType, entityId,
             userAgent
         });
     } catch (err) {
-        console.error('Audit log error:', err.message);
+        logger.error({ err }, 'Audit log error');
     }
 };

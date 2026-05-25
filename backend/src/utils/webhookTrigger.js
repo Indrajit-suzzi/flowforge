@@ -1,6 +1,7 @@
 import Webhook from '../models/webhook.js';
 import WebhookLog from '../models/webhookLog.js';
 import crypto from 'crypto';
+import logger from './logger.js';
 
 const deliver = async ({ webhook, event, contentType, payload, attempt = 1, retryOf = null }) => {
   const start = Date.now();
@@ -58,7 +59,7 @@ const deliver = async ({ webhook, event, contentType, payload, attempt = 1, retr
       retryOf
     });
   } catch (logErr) {
-    console.error('Failed to save webhook log:', logErr.message);
+    logger.error({ err: logErr }, 'Failed to save webhook log');
   }
 
   if (status === 'failed' && attempt < webhook.maxRetries) {
@@ -100,7 +101,7 @@ export const triggerWebhooks = async ({ tenantId, event, contentType, data }) =>
       deliver({ webhook, event, contentType, payload });
     }
   } catch (err) {
-    console.error('Trigger webhooks error:', err.message);
+    logger.error({ err }, 'Trigger webhooks error');
   }
 };
 

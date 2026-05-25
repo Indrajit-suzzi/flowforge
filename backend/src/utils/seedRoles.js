@@ -1,4 +1,5 @@
 import Role from '../models/role.js';
+import logger from './logger.js';
 
 const defaultRoles = [
   {
@@ -30,7 +31,7 @@ export const seedDefaultRoles = async (tenantId) => {
     const existing = await Role.findOne({ tenantId, slug: roleData.slug });
     if (!existing) {
       await Role.create({ ...roleData, tenantId });
-      console.log(`[Seed] Created role "${roleData.name}" for tenant ${tenantId}`);
+      logger.info({ role: roleData.name, tenant: tenantId }, 'Default role created');
     }
   }
 };

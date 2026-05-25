@@ -1,15 +1,17 @@
 {
   "name": "flowforge",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Multi-tenant headless CMS",
   "dependencies": {
     "@clerk/express": "^2.1.19",
     "bcryptjs": "^3.0.3",
@@ -20,12 +22,15 @@
     "graphql": "^16.14.0",
     "graphql-http": "^1.22.4",
     "graphql-playground-html": "^1.6.30",
+    "helmet": "^8.1.0",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.5.0",
+    "pino": "^9.6.0",
     "ruru": "^1.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "pino-pretty": "^13.0.0"
   }
 }

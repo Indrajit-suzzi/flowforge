@@ -2,6 +2,7 @@ import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
 import ContentVersion from '../models/contentVersion.js';
 import { triggerWebhooks } from '../utils/webhookTrigger.js';
+import logger from '../utils/logger.js';
 
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
@@ -77,10 +78,10 @@ export const runScheduler = async () => {
     }
 
     if (totalPublished > 0 || totalUnpublished > 0) {
-      console.log(`[Scheduler] Published ${totalPublished}, unpublished ${totalUnpublished} entries`);
+      logger.info({ published: totalPublished, unpublished: totalUnpublished }, 'Scheduler completed');
     }
   } catch (err) {
-    console.error('[Scheduler] Error:', err.message);
+    logger.error({ err }, 'Scheduler error');
   }
 };
 
@@ -89,13 +90,13 @@ let intervalId = null;
 export const startScheduler = () => {
   runScheduler();
   intervalId = setInterval(runScheduler, 60 * 1000);
-  console.log('[Scheduler] Started (checking every 60s)');
+  logger.info('Scheduler started (checking every 60s)');
 };
 
 export const stopScheduler = () => {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-    console.log('[Scheduler] Stopped');
+    logger.info('Scheduler stopped');
   }
 };
