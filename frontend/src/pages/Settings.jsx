@@ -84,12 +84,12 @@ export default function Settings() {
 
   const downloadLogs = async () => {
     try {
-      const { data } = await api.get('/api/v1/audit-logs?limit=1000');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const { data } = await api.get('/api/v1/audit-logs/export/csv');
+      const blob = new Blob([data], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch { /* ignore */ }
