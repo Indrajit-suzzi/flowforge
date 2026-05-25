@@ -64,4 +64,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.post('/clear', async (req, res) => {
+  try {
+    const contentTypes = await ContentType.find({ tenantId: req.tenant });
+    let cleared = 0;
+    for (const ct of contentTypes) {
+      const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
+      const Model = getModel(ct.name, schema);
+      const r = await Model.updateMany(
+        { tenantId: req.tenant, isDeleted: { $ne: true } },
+        { $set: { scheduledPublishAt: null, scheduledUnpublishAt: null } }
+      );
+      cleared += r.modifiedCount;
+    }
+    res.json({ message: `Cleared scheduling for ${cleared} entries` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

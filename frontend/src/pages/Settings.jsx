@@ -1,35 +1,105 @@
 import { useState, useEffect } from 'react';
-import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette } from 'lucide-react';
+import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette, Trash2, RotateCcw } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
-export default function Settings() {
-  const [notifications, setNotifications] = useState({ email: true, webhook: false });
-  const [language, setLanguage] = useState('en');
-  const [theme, setTheme] = useState({ primaryColor: '#ff7e5f', accentColor: '#8b5cf6', borderRadius: 12, fontFamily: 'Outfit', logoUrl: '', customCss: '' });
-  const [savingTheme, setSavingTheme] = useState(false);
-
-  useEffect(() => {
-    api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
-  }, []);
-
-  const saveTheme = async () => {
-    setSavingTheme(true);
-    try {
-      await api.put('/api/v1/theme', theme);
-      window.location.reload();
-    } finally {
-      setSavingTheme(false);
-    }
-  };
-
-  const Toggle = ({ checked, onChange }) => (
+function Toggle({ checked, onChange }) {
+  return (
     <label className="toggle" onClick={(e) => e.stopPropagation()}>
       <input type="checkbox" checked={checked} onChange={onChange} />
       <span className={`toggle-track ${checked ? 'on' : ''}`} />
       <span className={`toggle-thumb ${checked ? 'on' : ''}`} />
     </label>
   );
+}
+
+function ConfirmDialog({ open, title, message, confirmLabel, confirmClass, onConfirm, onCancel }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
+      <div className="glass-card" style={{ maxWidth: '420px', width: '90%', padding: '32px' }} onClick={e => e.stopPropagation()}>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#f8fafc', marginBottom: '8px', fontFamily: "'Outfit', sans-serif" }}>{title}</h3>
+        <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6', marginBottom: '24px' }}>{message}</p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '13px' }}>Cancel</button>
+          <button onClick={onConfirm} className={confirmClass || 'btn-danger'} style={{ padding: '10px 20px', fontSize: '13px' }}>{confirmLabel || 'Confirm'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Settings() {
+  const [notifications, setNotifications] = useState({ email: true, webhook: false });
+  const [language, setLanguage] = useState('en');
+  const [theme, setTheme] = useState({ primaryColor: '#ff7e5f', accentColor: '#8b5cf6', borderRadius: 12, fontFamily: 'Outfit', logoUrl: '', customCss: '' });
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const [confirm, setConfirm] = useState(null);
+
+  useEffect(() => {
+    api.get('/api/v1/users/me').then(r => {
+      const p = r.data.preferences || {};
+      if (p.language) setLanguage(p.language);
+      if (p.notifications) setNotifications({ email: true, webhook: false, ...p.notifications });
+    }).catch(() => {});
+    api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
+  }, []);
+
+  const savePreferences = async () => {
+    setSavingPrefs(true);
+    try {
+      await api.put('/api/v1/users/me', { preferences: { language, notifications } });
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  const saveTheme = async () => {
+    setSavingTheme(true);
+    try {
+      await api.put('/api/v1/theme', theme);
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const { data } = await api.get('/api/v1/stats/export');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `flowforge-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const downloadLogs = async () => {
+    try {
+      const { data } = await api.get('/api/v1/audit-logs?limit=1000');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  };
+
+  const handleConfirm = () => {
+    if (!confirm) return;
+    confirm.action();
+    setConfirm(null);
+  };
 
   return (
     <PageShell
@@ -38,6 +108,15 @@ export default function Settings() {
       icon={<Sparkles style={{ width: '22px', height: '22px' }} />}
       maxWidth="900px"
     >
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title}
+        message={confirm?.message}
+        confirmLabel={confirm?.label}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirm(null)}
+      />
+
       {/* Notifications */}
       <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
         <div className="section-heading" style={{ marginBottom: '24px' }}>
@@ -46,7 +125,7 @@ export default function Settings() {
           </div>
           Notifications
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
           <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Email Notifications</p>
@@ -62,6 +141,9 @@ export default function Settings() {
             <Toggle checked={notifications.webhook} onChange={e => setNotifications({ ...notifications, webhook: e.target.checked })} />
           </div>
         </div>
+        <button onClick={savePreferences} disabled={savingPrefs} className="btn-primary" style={{ border: 'none' }}>
+          {savingPrefs ? 'Saving...' : 'Save Preferences'}
+        </button>
       </div>
 
       {/* Language */}
@@ -74,13 +156,16 @@ export default function Settings() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Interface Language</label>
-          <select value={language} onChange={e => setLanguage(e.target.value)} className="select-field" style={{ maxWidth: '300px' }}>
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-            <option value="ja">Japanese</option>
-          </select>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <select value={language} onChange={e => setLanguage(e.target.value)} className="select-field" style={{ maxWidth: '300px' }}>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="ja">Japanese</option>
+            </select>
+            <button onClick={() => api.put('/api/v1/users/me', { preferences: { language, notifications } })} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '12px' }}>Apply</button>
+          </div>
         </div>
       </div>
 
@@ -154,11 +239,14 @@ export default function Settings() {
           Data Management
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
-            <Download style={{ width: '14px', height: '14px' }} /> Export All Data
+          <button onClick={exportData} disabled={exporting} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
+            <Download style={{ width: '14px', height: '14px' }} /> {exporting ? 'Exporting...' : 'Export All Data'}
           </button>
-          <button className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
+          <button onClick={downloadLogs} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
             <FileText style={{ width: '14px', height: '14px' }} /> Download Logs
+          </button>
+          <button onClick={() => api.get('/api/v1/stats/seed').catch(() => {})} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
+            <RotateCcw style={{ width: '14px', height: '14px' }} /> Re-seed Demo Data
           </button>
         </div>
         <p style={{ fontSize: '11px', color: '#475569', marginTop: '12px' }}>Data exports include all your content types, entries, and settings.</p>
@@ -178,14 +266,21 @@ export default function Settings() {
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Delete Account</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Permanently delete your account and all associated data</p>
             </div>
-            <button className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Delete</button>
+            <button onClick={() => setConfirm({ title: 'Delete Account', message: 'This will permanently delete your account and all associated data. This action cannot be undone.', label: 'Delete', action: async () => { await api.delete('/api/v1/users/me'); window.location.href = '/sign-in'; } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Delete</button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Revoke All API Keys</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Invalidate all active API keys immediately</p>
             </div>
-            <button className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Revoke</button>
+            <button onClick={() => setConfirm({ title: 'Revoke All API Keys', message: 'This will invalidate all active API keys. Any services using these keys will lose access immediately.', label: 'Revoke', action: async () => { await api.post('/api/v1/users/me/revoke-keys'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Revoke</button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)' }}>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Reset Scheduler</p>
+              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Clear all scheduled publish/unpublish jobs</p>
+            </div>
+            <button onClick={() => setConfirm({ title: 'Reset Scheduler', message: 'This will clear all scheduled publish and unpublish jobs. Entries will remain in their current state.', label: 'Reset', action: async () => { await api.post('/api/v1/calendar/clear'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Clear</button>
           </div>
         </div>
       </div>

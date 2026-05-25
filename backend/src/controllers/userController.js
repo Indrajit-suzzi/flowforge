@@ -75,3 +75,27 @@ export const getMe = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const updateMe = async (req, res) => {
+    try {
+        const allowed = ['username', 'preferences'];
+        const updates = {};
+        for (const key of allowed) {
+            if (req.body[key] !== undefined) updates[key] = req.body[key];
+        }
+        const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true, select: { password: 0 } });
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const deleteMe = async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.user.id);
+        res.json({ message: "Account deleted" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

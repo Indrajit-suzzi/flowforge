@@ -60,4 +60,14 @@ router.get('/export', async (req, res) => {
   }
 });
 
+router.post('/seed', async (req, res) => {
+  try {
+    const { execSync } = await import('child_process');
+    execSync('node seed.js', { cwd: process.cwd(), stdio: 'pipe' });
+    res.json({ message: 'Database re-seeded' });
+  } catch (_err) {
+    res.status(500).json({ error: 'Seed failed, check server logs' });
+  }
+});
+
 export default router;

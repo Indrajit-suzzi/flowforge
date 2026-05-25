@@ -22,7 +22,14 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
-    }
+    },
+    preferences: {
+      language: { type: String, default: 'en' },
+      notifications: {
+        email: { type: Boolean, default: true },
+        webhook: { type: Boolean, default: false },
+      },
+    },
   },
   { timestamps: true },
 );
