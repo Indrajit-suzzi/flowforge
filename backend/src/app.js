@@ -65,13 +65,18 @@ if (process.env.TRUST_PROXY) {
 
 const clerkSecret = process.env.CLERK_SECRET_KEY;
 const clerkPublishable = process.env.CLERK_PUBLISHABLE_KEY;
-if (clerkSecret && clerkSecret !== 'your_clerk_secret_key_here' && clerkPublishable && clerkPublishable !== 'your_clerk_publishable_key_here') {
+const clerkConfigured = clerkSecret && clerkPublishable;
+if (clerkConfigured) {
   const { clerkMiddleware } = await import('@clerk/express');
   app.use(clerkMiddleware({ publishableKey: clerkPublishable, secretKey: clerkSecret }));
   logger.info('Clerk authentication enabled');
 } else {
   logger.info('Clerk not configured — using JWT fallback');
 }
+
+// Auth routes (register/login — no auth middleware)
+import authRoutes from './routes/authRoutes.js';
+app.use("/api/v1/auth", authRoutes);
 
 // Public templates endpoint
 app.get("/api/v1/content-types/templates", (req, res) => {

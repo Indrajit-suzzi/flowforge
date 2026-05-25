@@ -25,7 +25,7 @@ const authMiddleware = async (req, res, next) => {
           return next();
         }
       } catch {
-        // Fall through to direct token verification below.
+        // Clerk session not available — try direct token verify below
       }
 
       try {
@@ -35,11 +35,8 @@ const authMiddleware = async (req, res, next) => {
         req.tenant = claims.sub;
         req.userRole = claims.metadata?.role || claims.public_metadata?.role || 'member';
         return next();
-    } catch (_err) {
-        return res.status(401).json({
-          message: "Invalid token",
-          reason: process.env.NODE_ENV === 'production' ? undefined : _err.reason || _err.message
-        });
+      } catch {
+        // Clerk token verification failed — fall through to JWT fallback
       }
     }
 

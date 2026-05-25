@@ -6,16 +6,25 @@ import bcrypt from "bcryptjs";
 import logger from "./src/utils/logger.js";
 
 const seed = async () => {
+  const force = process.argv.includes('--force');
   await mongoose.connect(process.env.MONGO_URI);
   logger.info("Connected to MongoDB");
 
-  // Check if already seeded (look for default admin user)
-  const User = (await import("./src/models/user.js")).default;
-  const existing = await User.findOne({ email: "admin@flowforge.app" });
-  if (existing) {
-    logger.info("Database already seeded — skipping");
-    await mongoose.disconnect();
-    process.exit(0);
+  if (force) {
+    logger.info("Force mode — dropping existing data");
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    for (const c of collections) {
+      await mongoose.connection.db.dropCollection(c.name);
+    }
+    logger.info("All collections dropped");
+  } else {
+    const User = (await import("./src/models/user.js")).default;
+    const existing = await User.findOne({ email: "admin@flowforge.app" });
+    if (existing) {
+      logger.info("Database already seeded — skipping (use --force to re-seed)");
+      await mongoose.disconnect();
+      process.exit(0);
+    }
   }
 
   // 1. Create default admin user
