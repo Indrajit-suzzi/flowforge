@@ -105,6 +105,9 @@ export default function Navbar() {
                   <button
                     ref={el => btns.current[cat.label] = el}
                     onClick={() => setOpenCat(isOpen ? null : cat.label)}
+                    aria-label={`${cat.label} menu`}
+                    aria-expanded={isOpen}
+                    aria-haspopup="true"
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '8px 16px', fontSize: '13px', fontWeight: 600,
@@ -129,10 +132,10 @@ export default function Navbar() {
 
           {/* Search + User */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-            <form onSubmit={e => { e.preventDefault(); if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`); }}>
+            <form onSubmit={e => { e.preventDefault(); if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`); }} role="search" aria-label="Site search">
               <div style={{ position: 'relative' }}>
                 <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#475569' }} />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." aria-label="Search content" style={{
                   width: '140px', fontSize: '12px', padding: '6px 10px 6px 30px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '8px', color: '#e2e8f0', outline: 'none', transition: 'all 0.2s',
@@ -144,7 +147,7 @@ export default function Navbar() {
             </form>
 
             <div style={{ position: 'relative' }}>
-              <button ref={userBtn} onClick={() => setUserOpen(o => !o)} style={{
+              <button ref={userBtn} onClick={() => setUserOpen(o => !o)} aria-label="User menu" aria-expanded={userOpen} aria-haspopup="true" style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '4px 8px 4px 4px', borderRadius: '24px',
                 border: userOpen ? '1px solid rgba(255,126,95,0.2)' : '1px solid rgba(255,255,255,0.06)',
@@ -172,7 +175,7 @@ export default function Navbar() {
         const rect = btn.getBoundingClientRect();
         const isLast = i === visibleCategories.length - 1;
         return (
-          <div key={cat.label} style={{
+          <div key={cat.label} role="menu" aria-label={`${cat.label} links`} style={{
             position: 'fixed',
             top: rect.bottom + 6,
             left: isLast ? rect.right - 200 : rect.left,
@@ -209,7 +212,7 @@ export default function Navbar() {
 
       {/* User dropdown */}
       {userOpen && (
-        <div style={{
+        <div role="menu" aria-label="User menu" style={{
           position: 'fixed', top: userPos.top, right: userPos.right, zIndex: 999,
           width: '240px',
           background: 'rgba(12, 8, 22, 0.96)',

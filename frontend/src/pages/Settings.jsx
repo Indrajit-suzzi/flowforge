@@ -3,10 +3,10 @@ import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette, Trash2, Rot
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, onChange, label }) {
   return (
-    <label className="toggle" onClick={(e) => e.stopPropagation()}>
-      <input type="checkbox" checked={checked} onChange={onChange} />
+    <label className="toggle" onClick={(e) => e.stopPropagation()} aria-label={label}>
+      <input type="checkbox" checked={checked} onChange={onChange} aria-hidden="true" />
       <span className={`toggle-track ${checked ? 'on' : ''}`} />
       <span className={`toggle-thumb ${checked ? 'on' : ''}`} />
     </label>
@@ -131,14 +131,14 @@ export default function Settings() {
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Email Notifications</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Receive updates and alerts via email</p>
             </div>
-            <Toggle checked={notifications.email} onChange={e => setNotifications({ ...notifications, email: e.target.checked })} />
+            <Toggle checked={notifications.email} onChange={e => setNotifications({ ...notifications, email: e.target.checked })} label="Toggle email notifications" />
           </div>
           <div className="data-table-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: '12px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Webhook Alerts</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Send real-time alerts to configured webhooks</p>
             </div>
-            <Toggle checked={notifications.webhook} onChange={e => setNotifications({ ...notifications, webhook: e.target.checked })} />
+            <Toggle checked={notifications.webhook} onChange={e => setNotifications({ ...notifications, webhook: e.target.checked })} label="Toggle webhook alerts" />
           </div>
         </div>
         <button onClick={savePreferences} disabled={savingPrefs} className="btn-primary" style={{ border: 'none' }}>

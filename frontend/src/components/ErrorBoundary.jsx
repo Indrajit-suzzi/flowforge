@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component {
           <p style={{ color: '#94a3b8', marginBottom: '24px', maxWidth: '400px', lineHeight: '1.6' }}>
             {this.state.error?.message || 'An unexpected error occurred'}
           </p>
-          <button onClick={() => this.setState({ error: null })} style={{
+          <button onClick={() => this.setState({ error: null })} aria-label="Retry loading the page" style={{
             padding: '10px 24px', borderRadius: '12px', border: 'none',
             background: 'linear-gradient(135deg, #ff7e5f, #feb47b)',
             color: '#080511', fontWeight: '600', cursor: 'pointer',
