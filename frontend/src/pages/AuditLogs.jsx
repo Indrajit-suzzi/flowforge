@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, Download } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
@@ -86,6 +86,11 @@ export default function AuditLogs() {
       subtitle="Track all actions in your workspace"
       icon={<Shield style={{ width: '22px', height: '22px' }} />}
       iconColor="#a78bfa"
+      actions={
+        <button onClick={() => { const p = new URLSearchParams(filter); window.open(`/api/v1/audit-logs/export/csv?${p}`, '_blank'); }} className="btn-secondary" style={{ padding: '9px 16px', fontSize: '13px', textDecoration: 'none' }}>
+          <Download style={{ width: '14px', height: '14px' }} /> Export CSV
+        </button>
+      }
     >
       <div className="grid-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', marginBottom: '24px' }}>
         {stats.map(s => (

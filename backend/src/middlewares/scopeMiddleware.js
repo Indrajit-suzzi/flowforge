@@ -1,21 +1,22 @@
-const scopeMiddleware = (requiredPermission) => (req, res, next) => {
-  if (req.user) return next();
+const methodMap = { GET: 'read', POST: 'write', PUT: 'write', PATCH: 'write', DELETE: 'delete' };
 
-  if (!req.apiKey) return res.status(403).json({ message: "Forbidden" });
+export const scopeMiddleware = () => {
+  return (req, res, next) => {
+    if (!req.apiKey) return next();
 
-  const modelName = req.params.modelName;
-  const scopes = req.apiKey.scopes;
+    const method = req.method;
+    const requiredPerm = methodMap[method] || 'read';
 
-  const hasScope = scopes.find(s =>
-    (s.contentType === '*' || s.contentType === modelName) &&
-    s.permissions.includes(requiredPermission)
-  );
+    const scopes = req.apiKey.scopes || [];
+    const wildcard = scopes.find(s => s.contentType === '*');
+    if (wildcard && wildcard.permissions.includes(requiredPerm)) return next();
+    if (wildcard && wildcard.permissions.includes('write') && (requiredPerm === 'write' || requiredPerm === 'delete')) return next();
 
-  if (!hasScope) {
-    return res.status(403).json({ message: `Insufficient permissions for ${modelName}` });
-  }
+    const slug = req.params.modelName || req.params.slug || req.baseUrl.split('/').pop();
+    const scope = scopes.find(s => s.contentType === slug);
+    if (scope && scope.permissions.includes(requiredPerm)) return next();
+    if (scope && scope.permissions.includes('write') && (requiredPerm === 'write' || requiredPerm === 'delete')) return next();
 
-  next();
+    return res.status(403).json({ error: 'API key does not have permission for this resource' });
+  };
 };
-
-export default scopeMiddleware;

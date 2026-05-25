@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
 const analyticsSchema = new mongoose.Schema({
-    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    tenantId: { type: String, required: true },
     endpoint: { type: String, required: true },
     method: { type: String, required: true },
     statusCode: { type: Number, required: true },
-    apiKeyId: { type: mongoose.Schema.Types.ObjectId, ref: 'ApiKey' },
+    apiKeyId: { type: String },
     responseTime: { type: Number, required: true },
     userAgent: { type: String },
     ip: { type: String }

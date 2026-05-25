@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
@@ -12,10 +12,25 @@ import AuditLogs from './pages/AuditLogs';
 import Webhooks from './pages/Webhooks';
 import MediaLibrary from './pages/MediaLibrary';
 import UsersRoles from './pages/UsersRoles';
+import Roles from './pages/Roles';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import ApiDocs from './pages/ApiDocs';
+import SearchResults from './pages/SearchResults';
+import Forms from './pages/Forms';
+import Tags from './pages/Tags';
+import ContentCalendar from './pages/ContentCalendar';
+import TenantThemeProvider from './components/TenantThemeProvider';
 import { useRole } from './hooks/useRole';
+import { setAuthTokenGetter } from './utils/api';
+
+function AuthTokenBridge() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+
+  setAuthTokenGetter(isLoaded && isSignedIn ? getToken : null);
+
+  return null;
+}
 
 function Layout({ children }) {
   return (
@@ -24,7 +39,7 @@ function Layout({ children }) {
       <div className="admin-glow-blob purple" style={{ bottom: '10%', right: '-8%', width: '600px', height: '600px' }} />
       <div className="page-grid-bg" />
       <Navbar />
-      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>{children}</main>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}><TenantThemeProvider>{children}</TenantThemeProvider></main>
       <Footer />
     </div>
   );
@@ -87,7 +102,12 @@ function SignInPage() {
     <div style={{ minHeight: '100vh', background: '#080511', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', position: 'relative' }}>
       <div className="page-grid-bg" />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <SignIn routing="path" path="/sign-in" afterSignInUrl="/dashboard" signUpUrl="/sign-up" appearance={clerkAppearance} />
+        <SignedIn>
+          <Navigate to="/dashboard" replace />
+        </SignedIn>
+        <SignedOut>
+          <SignIn routing="path" path="/sign-in" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" signUpUrl="/sign-up" appearance={clerkAppearance} />
+        </SignedOut>
       </div>
     </div>
   );
@@ -98,7 +118,12 @@ function SignUpPage() {
     <div style={{ minHeight: '100vh', background: '#080511', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', position: 'relative' }}>
       <div className="page-grid-bg" />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <SignUp routing="path" path="/sign-up" afterSignUpUrl="/dashboard" signInUrl="/sign-in" appearance={clerkAppearance} />
+        <SignedIn>
+          <Navigate to="/dashboard" replace />
+        </SignedIn>
+        <SignedOut>
+          <SignUp routing="path" path="/sign-up" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" signInUrl="/sign-in" appearance={clerkAppearance} />
+        </SignedOut>
       </div>
     </div>
   );
@@ -106,7 +131,9 @@ function SignUpPage() {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <AuthTokenBridge />
+      <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />
@@ -120,8 +147,14 @@ export default function App() {
         <Route path="/audit-logs" element={<><SignedIn><Layout><AdminRoute><AuditLogs /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/webhooks" element={<><SignedIn><Layout><AdminRoute><Webhooks /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/users" element={<><SignedIn><Layout><AdminRoute><UsersRoles /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/roles" element={<><SignedIn><Layout><AdminRoute><Roles /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/forms" element={<><SignedIn><Layout><Forms /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/tags" element={<><SignedIn><Layout><Tags /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/calendar" element={<><SignedIn><Layout><ContentCalendar /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/search" element={<><SignedIn><Layout><SearchResults /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/profile" element={<><SignedIn><Layout><Profile /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
         <Route path="/settings" element={<><SignedIn><Layout><Settings /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-    </Routes>
+      </Routes>
+    </>
   );
 }

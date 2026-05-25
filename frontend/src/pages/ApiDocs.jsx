@@ -136,12 +136,14 @@ export default function ApiDocs() {
   const sections = [
     { id: 'getting-started', label: 'Getting Started', icon: Terminal },
     { id: 'authentication', label: 'Authentication', icon: Key },
+    { id: 'graphql', label: 'GraphQL', icon: Terminal },
     { id: 'content-routes', label: 'Content Routes', icon: Book },
     { id: 'api-key-routes', label: 'API Key Routes', icon: Key },
     { id: 'media-routes', label: 'Media Routes', icon: Book },
     { id: 'analytics-routes', label: 'Analytics & Audit', icon: Book },
     { id: 'user-routes', label: 'User Routes', icon: Book },
     { id: 'webhook-routes', label: 'Webhook Routes', icon: Book },
+    { id: 'sitemap', label: 'Sitemap', icon: Book },
   ];
 
   const filteredSections = sections.filter(s => s.label.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -313,6 +315,21 @@ const posts = await client.get('/dynamic/blog');`;
                 <CodeBlock code={reactCode} language="JSX" id="react-example" copied={copied} onCopy={copyToClipboard} />
               </div>
 
+              <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
+                <h2 className="section-heading" style={{ marginBottom: '16px', fontSize: '18px' }}>
+                  <Terminal style={{ width: '18px', height: '18px', color: '#ff7e5f' }} /> GraphQL API
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+                  FlowForge also exposes a GraphQL endpoint for flexible data queries. Open the playground at your browser:
+                </p>
+                <div style={{ background: 'rgba(8, 5, 17, 0.6)', borderRadius: '10px', padding: '14px 18px', border: '1px solid rgba(255, 126, 95, 0.12)', marginBottom: '12px' }}>
+                  <code style={{ fontSize: '14px', color: '#ff7e5f', fontFamily: 'monospace', fontWeight: '500' }}>{docs.baseUrl}/graphql</code>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b' }}>
+                  All GraphQL requests require the same authentication headers as REST. Use the Playground at <code style={{ background: 'rgba(8,5,17,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', color: '#60a5fa' }}>{docs.baseUrl}/graphql</code> in your browser to explore the schema.
+                </p>
+              </div>
+
               <div style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '12px', padding: '14px 18px', fontSize: '13px', color: '#60a5fa', display: 'flex', gap: '10px', alignItems: 'start' }}>
                 <Info style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '1px' }} />
                 <div>
@@ -369,6 +386,65 @@ const posts = await client.get('/dynamic/blog');`;
                       <span style={{ fontSize: '12px', color: '#64748b' }}>{err.desc}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* GraphQL */}
+          {activeSection === 'graphql' && (
+            <div>
+              <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
+                <h2 className="section-heading" style={{ marginBottom: '16px', fontSize: '18px' }}>
+                  <Terminal style={{ width: '18px', height: '18px', color: '#ff7e5f' }} /> GraphQL API
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                  FlowForge provides a GraphQL endpoint for flexible queries. Visit the Playground in your browser to explore the schema.
+                </p>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Endpoint</h3>
+                  <div style={{ background: 'rgba(8, 5, 17, 0.6)', borderRadius: '10px', padding: '14px 18px', border: '1px solid rgba(255, 126, 95, 0.12)' }}>
+                    <code style={{ fontSize: '14px', color: '#ff7e5f', fontFamily: 'monospace' }}>{docs.baseUrl}/graphql</code>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Example Query</h3>
+                  <CodeBlock code={`query {
+  contentTypes {
+    name
+    slug
+    fields { name type }
+  }
+  entries(contentTypeSlug: "blog") {
+    _id
+    status
+    createdAt
+  }
+}`} language="GraphQL" id="gql-example" copied={copied} onCopy={copyToClipboard} />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Example Mutation</h3>
+                  <CodeBlock code={`mutation {
+  createEntry(contentTypeSlug: "blog", data: {
+    title: "Hello from GraphQL"
+    content: "This entry was created via the GraphQL API"
+    status: "draft"
+  }) {
+    _id
+    status
+    createdAt
+  }
+}`} language="GraphQL" id="gql-mutation" copied={copied} onCopy={copyToClipboard} />
+                </div>
+
+                <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '12px', padding: '14px 18px', fontSize: '13px', color: '#60a5fa', display: 'flex', gap: '10px', alignItems: 'start' }}>
+                  <Info style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '1px' }} />
+                  <div>
+                    <strong style={{ color: '#60a5fa' }}>Auth:</strong> GraphQL requests use the same authentication as REST. Include <code style={{ background: 'rgba(8,5,17,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>Authorization: Bearer</code> or <code style={{ background: 'rgba(8,5,17,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>X-API-Key</code> headers. The Playground will prompt for auth — paste your token or API key there.
+                  </div>
                 </div>
               </div>
             </div>
@@ -520,6 +596,50 @@ const posts = await client.get('/dynamic/blog');`;
                     <EndpointCard
                       method="GET" path={`/dynamic/${ct.slug}/export/csv`} desc="Export as CSV" id={`${ct.slug}-csv`}
                       response={`_id,status,${ct.fields.map(f => f.name).join(',')}\n673f8b9e11c4,published,...`}
+                      copied={copied} onCopy={copyToClipboard}
+                    />
+
+                    <EndpointCard
+                      method="GET" path={`/dynamic/${ct.slug}/:id/versions`} desc="List all versions" id={`${ct.slug}-versions`}
+                      response={`{
+  "status": "success",
+  "count": 3,
+  "data": [
+    {
+      "_id": "...",
+      "version": 3,
+      "changeDescription": "Updated",
+      "status": "draft",
+      "createdAt": "2026-05-22T12:00:00Z"
+    }
+  ]
+}`}
+                      copied={copied} onCopy={copyToClipboard}
+                    />
+
+                    <EndpointCard
+                      method="GET" path={`/dynamic/${ct.slug}/:id/versions/:versionId`} desc="Get specific version" id={`${ct.slug}-version-get`}
+                      response={`{
+  "status": "success",
+  "data": {
+    "_id": "...",
+    "version": 2,
+    "changeDescription": "Updated title",
+    "data": { ... full entry snapshot ... },
+    "status": "draft",
+    "createdAt": "2026-05-22T11:00:00Z"
+  }
+}`}
+                      copied={copied} onCopy={copyToClipboard}
+                    />
+
+                    <EndpointCard
+                      method="POST" path={`/dynamic/${ct.slug}/:id/rollback/:versionId`} desc="Rollback to version" id={`${ct.slug}-rollback`}
+                      response={`{
+  "status": "success",
+  "message": "Rolled back to version 2",
+  "data": { ... restored entry ... }
+}`}
                       copied={copied} onCopy={copyToClipboard}
                     />
                   </div>
@@ -921,6 +1041,29 @@ const posts = await client.get('/dynamic/blog');`;
   "timestamp": "2026-05-21T12:00:00Z"
 }`} language="JSON" id="webhook-payload" copied={copied} onCopy={copyToClipboard} />
               </div>
+            </div>
+          )}
+
+          {/* Sitemap */}
+          {activeSection === 'sitemap' && (
+            <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
+              <h2 className="section-heading" style={{ marginBottom: '24px', fontSize: '18px' }}>
+                Sitemap
+              </h2>
+              <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px', lineHeight: '1.7' }}>
+                Generate an XML sitemap of all published entries for SEO. The sitemap includes all content types
+                and their published entries with last-modified dates.
+              </p>
+              <EndpointCard
+                method="GET" path="/api/v1/sitemap.xml?tenant={tenantId}" desc="Generate sitemap XML" id="sitemap"
+                response={`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://flowforge.app/</loc><priority>1.0</priority></url>
+  <url><loc>https://flowforge.app/blog/123</loc><lastmod>2026-05-21</lastmod><priority>0.8</priority></url>
+</urlset>`}
+                params={[{ name: 'tenant', type: 'query', desc: 'Tenant ID (or pass X-Tenant-Id header)' }]}
+                copied={copied} onCopy={copyToClipboard}
+              />
             </div>
           )}
         </div>

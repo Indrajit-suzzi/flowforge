@@ -1,50 +1,51 @@
-const adminPermissions = {
-  contentTypes: true,
-  contentEntries: true,
-  apiKeys: true,
-  analytics: true,
-  auditLogs: true,
-  webhooks: true,
-  mediaLibrary: true,
-  userManagement: true,
-  systemSettings: true
+import Role from '../models/role.js';
+
+const hardcodedPermissions = {
+  admin: {
+    contentTypes: true, contentEntries: true, apiKeys: true,
+    analytics: true, auditLogs: true, webhooks: true,
+    mediaLibrary: true, userManagement: true, systemSettings: true, roles: true
+  },
+  member: {
+    contentTypes: true, contentEntries: true, apiKeys: true,
+    analytics: false, auditLogs: false, webhooks: false,
+    mediaLibrary: true, userManagement: false, systemSettings: false, roles: false
+  }
 };
 
-const memberPermissions = {
-  contentTypes: true,
-  contentEntries: true,
-  apiKeys: true,
-  analytics: false,
-  auditLogs: false,
-  webhooks: false,
-  mediaLibrary: true,
-  userManagement: false,
-  systemSettings: false
-};
+const permissionCache = {};
 
 export const roleMiddleware = (requiredPermission) => {
   return async (req, res, next) => {
     try {
-      if (req.apiKey) {
-        return next();
-      }
+      if (req.apiKey) return next();
 
       if (req.user && req.user.id) {
-        const role = req.userRole || 'member';
-        const permissions = role === 'admin' ? adminPermissions : memberPermissions;
+        const roleSlug = req.userRole || 'member';
 
-        if (requiredPermission && !permissions[requiredPermission]) {
-          return res.status(403).json({ message: "Insufficient permissions" });
+        let permissions = permissionCache[`${req.tenant}-${roleSlug}`];
+        if (!permissions) {
+          const role = await Role.findOne({ tenantId: req.tenant, slug: roleSlug });
+          permissions = role?.permissions?.toObject?.() || hardcodedPermissions[roleSlug] || hardcodedPermissions.member;
+          permissionCache[`${req.tenant}-${roleSlug}`] = permissions;
         }
 
+        if (requiredPermission && !permissions[requiredPermission]) {
+          return res.status(403).json({ message: 'Insufficient permissions' });
+        }
+
+        req.permissions = permissions;
         return next();
       }
 
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: 'Authentication required' });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   };
 };
 
-export const getRolePermissions = (role) => role === 'admin' ? adminPermissions : memberPermissions;
+export const getRolePermissions = async (tenantId, roleSlug) => {
+  const role = await Role.findOne({ tenantId, slug: roleSlug });
+  return role?.permissions?.toObject?.() || hardcodedPermissions[roleSlug] || hardcodedPermissions.member;
+};

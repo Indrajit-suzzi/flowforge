@@ -17,9 +17,13 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-fileupload": "^1.5.2",
+    "graphql": "^16.14.0",
+    "graphql-http": "^1.22.4",
+    "graphql-playground-html": "^1.6.30",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.5.0"
+    "mongoose": "^9.5.0",
+    "ruru": "^1.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -16,18 +16,37 @@ const getModel = (name, schemaDefinition) => {
     {
       ...schemaDefinition,
       tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        type: String,
         required: true,
       },
       status: {
         type: String,
-        enum: ['draft', 'published'],
+        enum: ['draft', 'published', 'scheduled'],
         default: 'draft'
       },
       publishedAt: {
         type: Date
-      }
+      },
+      scheduledPublishAt: {
+        type: Date
+      },
+      scheduledUnpublishAt: {
+        type: Date
+      },
+      locale: {
+        type: String,
+        default: 'en'
+      },
+      translations: [{
+        locale: { type: String, required: true },
+        fields: { type: Map, of: mongoose.Schema.Types.Mixed }
+      }],
+      isDeleted: { type: Boolean, default: false },
+      deletedAt: { type: Date },
+      accessPassword: { type: String },
+      notes: { type: String },
+      tags: [{ type: String }],
+      workflowStage: { type: String }
     },
     {
       timestamps: true,

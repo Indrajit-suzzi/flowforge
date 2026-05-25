@@ -4,21 +4,31 @@ import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import { useRole } from '../hooks/useRole';
 
-const roleColors = {
-  admin: { bg: 'rgba(255,126,95,0.12)', text: '#ff7e5f', border: 'rgba(255,126,95,0.2)', label: 'Admin' },
-  member: { bg: 'rgba(59,130,246,0.12)', text: '#60a5fa', border: 'rgba(59,130,246,0.2)', label: 'Member' },
-};
+const defaultRoleColors = [
+  { bg: 'rgba(255,126,95,0.12)', text: '#ff7e5f', border: 'rgba(255,126,95,0.2)' },
+  { bg: 'rgba(59,130,246,0.12)', text: '#60a5fa', border: 'rgba(59,130,246,0.2)' },
+  { bg: 'rgba(16,185,129,0.12)', text: '#34d399', border: 'rgba(16,185,129,0.2)' },
+  { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', border: 'rgba(245,158,11,0.2)' },
+  { bg: 'rgba(139,92,246,0.12)', text: '#a78bfa', border: 'rgba(139,92,246,0.2)' },
+];
 
 export default function UsersRoles() {
   const { isAdmin } = useRole();
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'member' });
 
   useEffect(() => {
-    api.get('/api/v1/users').then(r => { setUsers(r.data || []); }).catch(() => {});
+    Promise.all([
+      api.get('/api/v1/users').then(r => r.data || []).catch(() => []),
+      api.get('/api/v1/roles').then(r => r.data || []).catch(() => [])
+    ]).then(([usersData, rolesData]) => {
+      setUsers(usersData);
+      setRoles(rolesData);
+    });
   }, []);
 
   const handleSubmit = async (e) => {
@@ -88,8 +98,9 @@ export default function UsersRoles() {
             </div>
             <div style={{ marginBottom: '16px' }}>
               <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} className="select-field" style={{ width: '200px' }}>
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
+                {roles.map(r => (
+                  <option key={r.slug} value={r.slug}>{r.name}</option>
+                ))}
               </select>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -107,15 +118,16 @@ export default function UsersRoles() {
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {users.map(u => {
-          const rc = roleColors[u.role] || roleColors.member;
+        {users.map((u, idx) => {
+          const roleDef = roles.find(r => r.slug === u.role);
+          const rc = defaultRoleColors[roles.indexOf(roleDef) % defaultRoleColors.length] || defaultRoleColors[0];
           return (
             <div key={u._id} className="data-table-row" style={{ gridTemplateColumns: '1fr 100px 90px 100px' }}>
               <div>
                 <p style={{ fontSize: '13px', color: '#f8fafc', fontWeight: '500' }}>{u.username}</p>
                 <p style={{ fontSize: '11px', color: '#475569' }}>{u.email}</p>
               </div>
-              <span style={{ padding: '3px 8px', borderRadius: '6px', background: rc.bg, color: rc.text, fontSize: '11px', display: 'inline-block', width: 'fit-content', border: `1px solid ${rc.border}` }}>{rc.label}</span>
+              <span style={{ padding: '3px 8px', borderRadius: '6px', background: rc.bg, color: rc.text, fontSize: '11px', display: 'inline-block', width: 'fit-content', border: `1px solid ${rc.border}` }}>{roleDef?.name || u.role}</span>
               <span className={`badge ${u.isActive ? 'badge-active' : 'badge-inactive'}`} style={{ width: 'fit-content' }}>{u.isActive ? 'Active' : 'Disabled'}</span>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <button onClick={() => { setEditingUser(u); setForm({ ...u, password: '' }); setShowForm(true); }} className="btn-ghost" style={{ padding: '6px' }}>

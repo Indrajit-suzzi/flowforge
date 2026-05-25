@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const mediaSchema = new mongoose.Schema({
-    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    tenantId: { type: String, required: true },
     name: { type: String, required: true },
     originalName: { type: String, required: true },
     mimeType: { type: String, required: true },

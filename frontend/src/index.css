@@ -252,6 +252,12 @@ a {
   border: 1px solid rgba(100, 116, 139, 0.2);
 }
 
+.badge-scheduled {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
 .badge-active {
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
@@ -768,4 +774,16 @@ a {
   border-color: rgba(255, 126, 95, 0.25) !important;
   box-shadow: 0 25px 50px -15px rgba(139, 92, 246, 0.15), 0 0 30px rgba(255, 126, 95, 0.05);
   transform: translateY(-3px);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }

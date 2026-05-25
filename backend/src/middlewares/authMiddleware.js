@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import ApiKey from '../models/apiKey.js';
+import { seedDefaultRoles } from '../utils/seedRoles.js';
 
 const clerkSecret = process.env.CLERK_SECRET_KEY;
 const useClerk = clerkSecret && clerkSecret !== 'your_clerk_secret_key_here';
@@ -15,16 +16,30 @@ const authMiddleware = async (req, res, next) => {
     if (useClerk) {
       try {
         const { getAuth } = await import('@clerk/express');
-        const auth = await getAuth(req);
-        if (!auth.userId) {
-          return res.status(401).json({ message: "Invalid token" });
+        const auth = getAuth(req);
+        if (auth.userId) {
+          req.user = { id: auth.userId };
+          req.tenant = auth.userId;
+          req.userRole = auth.sessionClaims?.metadata?.role || auth.sessionClaims?.public_metadata?.role || 'member';
+          seedDefaultRoles(req.tenant).catch(() => {});
+          return next();
         }
-        req.user = { id: auth.userId };
-        req.tenant = auth.userId;
-        req.userRole = auth.sessionClaims?.metadata?.role || 'member';
+      } catch {
+        // Fall through to direct token verification below.
+      }
+
+      try {
+        const { verifyToken } = await import('@clerk/backend');
+        const claims = await verifyToken(token, { secretKey: clerkSecret });
+        req.user = { id: claims.sub };
+        req.tenant = claims.sub;
+        req.userRole = claims.metadata?.role || claims.public_metadata?.role || 'member';
         return next();
       } catch (err) {
-        return res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({
+          message: "Invalid token",
+          reason: process.env.NODE_ENV === 'production' ? undefined : err.reason || err.message
+        });
       }
     }
 
@@ -33,6 +48,7 @@ const authMiddleware = async (req, res, next) => {
       req.user = { id: decoded.id };
       req.tenant = decoded.id;
       req.userRole = decoded.role || 'member';
+      seedDefaultRoles(req.tenant).catch(() => {});
       return next();
     } catch (err) {
       return res.status(401).json({ message: "Invalid token" });
@@ -48,6 +64,7 @@ const authMiddleware = async (req, res, next) => {
           req.tenant = apiKey.tenantId.toString();
           req.apiKey = apiKey;
           req.apiKeyId = apiKey._id;
+          seedDefaultRoles(req.tenant).catch(() => {});
           return next();
         }
       }

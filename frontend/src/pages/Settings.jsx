@@ -1,10 +1,27 @@
-import { useState } from 'react';
-import { FileText, Bell, Globe, Shield, Download, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, Bell, Globe, Shield, Download, Sparkles, Palette } from 'lucide-react';
+import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
 export default function Settings() {
   const [notifications, setNotifications] = useState({ email: true, webhook: false });
   const [language, setLanguage] = useState('en');
+  const [theme, setTheme] = useState({ primaryColor: '#ff7e5f', accentColor: '#8b5cf6', borderRadius: 12, fontFamily: 'Outfit', logoUrl: '', customCss: '' });
+  const [savingTheme, setSavingTheme] = useState(false);
+
+  useEffect(() => {
+    api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
+  }, []);
+
+  const saveTheme = async () => {
+    setSavingTheme(true);
+    try {
+      await api.put('/api/v1/theme', theme);
+      window.location.reload();
+    } finally {
+      setSavingTheme(false);
+    }
+  };
 
   const Toggle = ({ checked, onChange }) => (
     <label className="toggle" onClick={(e) => e.stopPropagation()}>
@@ -65,6 +82,67 @@ export default function Settings() {
             <option value="ja">Japanese</option>
           </select>
         </div>
+      </div>
+
+      {/* Branding */}
+      <div className="glass-card" style={{ padding: '28px', marginBottom: '20px' }}>
+        <div className="section-heading" style={{ marginBottom: '24px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,126,95,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,126,95,0.2)' }}>
+            <Palette style={{ width: '15px', height: '15px', color: '#ff7e5f' }} />
+          </div>
+          Branding
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Primary Color</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input type="color" value={theme.primaryColor} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} style={{ width: '40px', height: '40px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', background: 'transparent' }} />
+              <input type="text" value={theme.primaryColor} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="input-field" style={{ flex: 1 }} />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Accent Color</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input type="color" value={theme.accentColor} onChange={e => setTheme({ ...theme, accentColor: e.target.value })} style={{ width: '40px', height: '40px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', background: 'transparent' }} />
+              <input type="text" value={theme.accentColor} onChange={e => setTheme({ ...theme, accentColor: e.target.value })} className="input-field" style={{ flex: 1 }} />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Border Radius</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input type="range" min="4" max="24" value={theme.borderRadius} onChange={e => setTheme({ ...theme, borderRadius: Number(e.target.value) })} style={{ flex: 1, accentColor: theme.primaryColor }} />
+              <span style={{ fontSize: '13px', color: '#e2e8f0', minWidth: '30px' }}>{theme.borderRadius}px</span>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Font Family</label>
+            <select value={theme.fontFamily} onChange={e => setTheme({ ...theme, fontFamily: e.target.value })} className="select-field">
+              <option value="Outfit">Outfit</option>
+              <option value="Inter">Inter</option>
+              <option value="DM Sans">DM Sans</option>
+              <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+            </select>
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Logo URL (optional)</label>
+            <input type="text" value={theme.logoUrl} onChange={e => setTheme({ ...theme, logoUrl: e.target.value })} placeholder="https://example.com/logo.png" className="input-field" />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Custom CSS</label>
+            <textarea value={theme.customCss} onChange={e => setTheme({ ...theme, customCss: e.target.value })} placeholder="--bg-dark: #0a0a0a;" className="input-field" style={{ minHeight: '80px', fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }} />
+          </div>
+        </div>
+        <div style={{ marginBottom: '16px', padding: '16px', background: 'rgba(8,5,17,0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>Preview</p>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: `${Math.min(12, theme.borderRadius)}px`, background: theme.primaryColor }} />
+            <div style={{ width: '24px', height: '24px', borderRadius: `${Math.min(12, theme.borderRadius)}px`, background: theme.accentColor }} />
+            <span style={{ fontSize: '14px', color: '#94a3b8', fontFamily: `'${theme.fontFamily}', sans-serif` }}>Aa</span>
+          </div>
+        </div>
+        <button onClick={saveTheme} disabled={savingTheme} className="btn-primary" style={{ border: 'none' }}>
+          {savingTheme ? 'Saving...' : 'Save Branding'}
+        </button>
       </div>
 
       {/* Data */}

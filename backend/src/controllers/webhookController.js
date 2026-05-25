@@ -3,14 +3,17 @@ import Webhook from '../models/webhook.js';
 
 export const create = async (req, res) => {
     try {
-        const { name, url, events, contentType, secret } = req.body;
+        const { name, url, events, contentType, secret, maxRetries, retryDelayMs, conditions } = req.body;
         const webhook = await Webhook.create({
             tenantId: req.tenant,
             name,
             url,
             events: events || ['content.create', 'content.update', 'content.delete'],
             contentType,
-            secret: secret || crypto.randomBytes(32).toString('hex')
+            secret: secret || crypto.randomBytes(32).toString('hex'),
+            maxRetries: maxRetries ?? 3,
+            retryDelayMs: retryDelayMs ?? 5000,
+            conditions: conditions || []
         });
         res.status(201).json(webhook);
     } catch (err) {

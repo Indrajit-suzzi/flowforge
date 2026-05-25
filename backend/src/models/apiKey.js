@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const apiKeySchema = new mongoose.Schema({
-    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    tenantId: { type: String, required: true },
     name: { type: String, required: true },
     key: { type: String, required: true, unique: true },
     keyPreview: { type: String, required: true },
@@ -9,7 +9,11 @@ const apiKeySchema = new mongoose.Schema({
         contentType: { type: String, required: true },
         permissions: [{ type: String, enum: ['read', 'write', 'delete'] }]
     }],
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    rateLimit: {
+      maxRequests: { type: Number, default: 100, min: 1, max: 100000 },
+      windowMs: { type: Number, default: 60000, min: 1000, max: 3600000 }
+    }
 }, { timestamps: true });
 
 apiKeySchema.index({ tenantId: 1 });

@@ -11,6 +11,7 @@ export const getDocs = async (req, res) => {
         const docs = {
             baseUrl,
             authentication: authNote,
+            graphqlEndpoint: `${baseUrl}/graphql`,
             endpoints: [],
             contentTypes: contentTypes.map(ct => ({
                 name: ct.name,
@@ -25,7 +26,10 @@ export const getDocs = async (req, res) => {
                     publish: { method: 'PATCH', path: `/dynamic/${ct.slug}/:id/publish`, description: 'Publish entry' },
                     unpublish: { method: 'PATCH', path: `/dynamic/${ct.slug}/:id/unpublish`, description: 'Unpublish entry' },
                     exportJson: { method: 'GET', path: `/dynamic/${ct.slug}/export/json`, description: 'Export as JSON' },
-                    exportCsv: { method: 'GET', path: `/dynamic/${ct.slug}/export/csv`, description: 'Export as CSV' }
+                    exportCsv: { method: 'GET', path: `/dynamic/${ct.slug}/export/csv`, description: 'Export as CSV' },
+                    listVersions: { method: 'GET', path: `/dynamic/${ct.slug}/:id/versions`, description: 'List all versions of an entry' },
+                    getVersion: { method: 'GET', path: `/dynamic/${ct.slug}/:id/versions/:versionId`, description: 'Get specific version data' },
+                    rollback: { method: 'POST', path: `/dynamic/${ct.slug}/:id/rollback/:versionId`, description: 'Rollback entry to a previous version' }
                 }
             }))
         };
@@ -61,7 +65,10 @@ export const getDocsMarkdown = async (req, res) => {
             md += `\`PATCH  ${baseUrl}/dynamic/${ct.slug}/:id/publish\` - Publish\n`;
             md += `\`PATCH  ${baseUrl}/dynamic/${ct.slug}/:id/unpublish\` - Unpublish\n`;
             md += `\`GET    ${baseUrl}/dynamic/${ct.slug}/export/json\` - Export JSON\n`;
-            md += `\`GET    ${baseUrl}/dynamic/${ct.slug}/export/csv\` - Export CSV\n\n`;
+            md += `\`GET    ${baseUrl}/dynamic/${ct.slug}/export/csv\` - Export CSV\n`;
+            md += `\`GET    ${baseUrl}/dynamic/${ct.slug}/:id/versions\` - List all versions\n`;
+            md += `\`GET    ${baseUrl}/dynamic/${ct.slug}/:id/versions/:versionId\` - Get specific version\n`;
+            md += `\`POST   ${baseUrl}/dynamic/${ct.slug}/:id/rollback/:versionId\` - Rollback to a version\n\n`;
         }
 
         res.setHeader('Content-Type', 'text/markdown');
