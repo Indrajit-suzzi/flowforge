@@ -4,7 +4,8 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { 
   ArrowRight, CheckCircle, Zap, Code, Key, Layers, 
   Shield, LayoutDashboard, Server, Terminal, 
-  Sparkles, Database, ArrowUpRight
+  Sparkles, Database, ArrowUpRight, Star, Quote,
+  Menu, X, Globe, Cpu
 } from 'lucide-react';
 import './Landing.css';
 
@@ -298,12 +299,60 @@ function TiltCard({ children, className = '', style = {} }) {
 }
 
 // -------------------------------------------------------------
+// SUB-COMPONENT: Animated Count Up
+// -------------------------------------------------------------
+function CountUp({ end, duration = 2000, suffix = '' }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const counted = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !counted.current) {
+        counted.current = true;
+        const start = performance.now();
+        const animate = (now) => {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCount(Math.floor(eased * end));
+          if (progress < 1) requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      }
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [end, duration]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
+const TECH_STACK = [
+  { name: 'MongoDB', icon: Database, color: '#10b981', desc: 'Document database with auto-scaling replica sets' },
+  { name: 'Express', icon: Server, color: '#fbbf24', desc: 'Lightweight REST framework with middleware pipeline' },
+  { name: 'React 19', icon: Cpu, color: '#60a5fa', desc: 'Client dashboard with route-level code splitting' },
+  { name: 'Node.js 20', icon: Terminal, color: '#34d399', desc: 'ESM runtime with cluster mode and graceful shutdown' },
+  { name: 'Clerk Auth', icon: Shield, color: '#a78bfa', desc: 'Dual-mode authentication (Clerk + JWT fallback)' },
+  { name: 'Docker', icon: Globe, color: '#38bdf8', desc: 'Multi-stage alpine builds with health-check probes' },
+];
+
+const TESTIMONIALS = [
+  { quote: 'FlowForge cut our content API setup from weeks to hours. The auto-generated schemas and tenant isolation are game-changers.', name: 'Alex Chen', role: 'CTO, Stellar Labs', rating: 5 },
+  { quote: 'The dual auth (Clerk + JWT) made migration painless. Our team was productive in under a day.', name: 'Sarah Mitchell', role: 'Lead Developer, Northwind Digital', rating: 5 },
+  { quote: 'We evaluated Strapi, Sanity, and Directus. FlowForge won on simplicity — no plugins, no config nightmares, just works.', name: 'James Okonkwo', role: 'Founder, Webflow Studios', rating: 5 },
+];
+
+// -------------------------------------------------------------
 // MAIN COMPONENT: Landing Page
 // -------------------------------------------------------------
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState('schema');
   const [mouseGlowPos, setMouseGlowPos] = useState({ x: 0, y: 0 });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const featureSectionRef = useRef(null);
 
   // Parallax background blobs
@@ -404,6 +453,7 @@ export default function Landing() {
           <nav style={{ display: 'flex', alignItems: 'center', gap: '32px' }} className="desktop-nav">
             <a href="#features" className="nav-link">Features</a>
             <a href="#playground" className="nav-link">Playground</a>
+            <a href="#tech-stack" className="nav-link">Tech Stack</a>
             <a href="#how-it-works" className="nav-link">Workflow</a>
             <a href="https://github.com/Indrajit-suzzi/flowforge" target="_blank" rel="noopener noreferrer" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               Docs <ArrowUpRight style={{ width: '12px', height: '12px' }} />
@@ -417,9 +467,46 @@ export default function Landing() {
             <Link to="/sign-up" className="btn-primary-peach" style={{ padding: '10px 22px', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
               Get Started <ArrowRight style={{ width: '14px', height: '14px' }} />
             </Link>
+            <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="mobile-nav-toggle" aria-label="Toggle navigation">
+              {mobileNavOpen ? <X style={{ width: '20px', height: '20px' }} /> : <Menu style={{ width: '20px', height: '20px' }} />}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
+        {mobileNavOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              position: 'fixed', top: '70px', left: 0, right: 0, zIndex: 99,
+              background: 'rgba(8, 5, 17, 0.98)', backdropFilter: 'blur(20px)',
+              borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px',
+              display: 'flex', flexDirection: 'column', gap: '12px',
+            }}
+          >
+            {[
+              { label: 'Features', href: '#features' },
+              { label: 'Playground', href: '#playground' },
+              { label: 'Tech Stack', href: '#tech-stack' },
+              { label: 'Workflow', href: '#how-it-works' },
+            ].map(link => (
+              <a key={link.href} href={link.href} onClick={() => setMobileNavOpen(false)} className="nav-link" style={{ fontSize: '16px', padding: '10px 0' }}>
+                {link.label}
+              </a>
+            ))}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <Link to="/sign-in" onClick={() => setMobileNavOpen(false)} className="btn-secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px' }}>Sign In</Link>
+              <Link to="/sign-up" onClick={() => setMobileNavOpen(false)} className="btn-primary-peach" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                Get Started <ArrowRight style={{ width: '14px', height: '14px' }} />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* HERO SECTION */}
       <section className="hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', position: 'relative', zIndex: 10 }}>
@@ -495,10 +582,10 @@ export default function Landing() {
         <div className="section-container">
           <div className="stats-grid">
             {[
-              { val: '100%', label: 'Data Isolation' },
-              { val: '<15ms', label: 'Schema Generation' },
-              { val: 'Secure', label: 'Role-Based RBAC' },
-              { val: 'Dockerized', label: 'Self-Hosted Stack' }
+              { val: 100, suffix: '%', label: 'Data Isolation' },
+              { val: 15, suffix: 'ms', label: 'Schema Generation', prefix: '<' },
+              { val: 5, suffix: '', label: 'Role-Based RBAC', prefix: '&#8203;' },
+              { val: 1, suffix: '', label: 'Docker Command Deploy', prefix: '1 ' }
             ].map((stat, idx) => (
               <motion.div 
                 key={stat.label} 
@@ -509,7 +596,7 @@ export default function Landing() {
                 style={{ textAlign: 'center' }}
               >
                 <div className="landing-font-heading" style={{ fontSize: '32px', fontWeight: '800', background: 'linear-gradient(135deg, #fff, #ff7e5f)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  {stat.val}
+                  {stat.prefix || ''}<CountUp end={stat.val} suffix={stat.suffix} />
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {stat.label}
@@ -559,6 +646,45 @@ export default function Landing() {
                     </p>
                   </div>
                 </TiltCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TECH STACK SECTION */}
+      <section id="tech-stack" className="features-section" style={{ background: 'rgba(8, 5, 17, 0.4)', borderTop: '1px solid var(--border-glass)', position: 'relative', zIndex: 10 }}>
+        <div className="section-container">
+          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+            <span className="landing-font-heading" style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '1.5px', background: 'rgba(56, 189, 248, 0.08)', padding: '6px 14px', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '20px' }}>
+              Built With
+            </span>
+            <h2 className="landing-heading-large" style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', color: '#fff', marginTop: '16px', marginBottom: '20px' }}>
+              Modern open-source stack
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--color-text-secondary)', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
+              Every component chosen for performance, security, and developer experience.
+            </p>
+          </div>
+
+          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+            {TECH_STACK.map((tech, idx) => (
+              <motion.div
+                key={tech.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.5, delay: idx * 0.08 }}
+              >
+                <div className="glass-card-sm" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', background: 'rgba(8,5,17,0.3)' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${tech.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${tech.color}25`, flexShrink: 0 }}>
+                    <tech.icon style={{ width: '20px', height: '20px', color: tech.color }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>{tech.name}</p>
+                    <p style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{tech.desc}</p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -755,6 +881,51 @@ export default function Landing() {
             ))}
           </div>
 
+        </div>
+      </section>
+
+      {/* TESTIMONIALS SECTION */}
+      <section className="how-it-works-section" style={{ position: 'relative', zIndex: 10 }}>
+        <div className="section-container">
+          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+            <span className="landing-font-heading" style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '1.5px', background: 'rgba(251, 191, 36, 0.08)', padding: '6px 14px', border: '1px solid rgba(251, 191, 36, 0.2)', borderRadius: '20px' }}>
+              Testimonials
+            </span>
+            <h2 className="landing-heading-large" style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', color: '#fff', marginTop: '16px', marginBottom: '20px' }}>
+              Loved by developers
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--color-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+              See what teams are saying about their experience.
+            </p>
+          </div>
+
+          <div className="how-it-works-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+            {TESTIMONIALS.map((t, idx) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+              >
+                <div className="glass-card-sm" style={{ padding: '28px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', background: 'rgba(8,5,17,0.3)', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Quote style={{ width: '24px', height: '24px', color: 'rgba(255,126,95,0.3)', marginBottom: '16px' }} />
+                  <p style={{ fontSize: '13px', color: '#e2e8f0', lineHeight: '1.6', flexGrow: 1, fontStyle: 'italic' }}>"{t.quote}"</p>
+                  <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc' }}>{t.name}</p>
+                      <p style={{ fontSize: '11px', color: '#64748b' }}>{t.role}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                      {Array.from({ length: t.rating }).map((_, i) => (
+                        <Star key={i} style={{ width: '14px', height: '14px', fill: '#fbbf24', color: '#fbbf24' }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
