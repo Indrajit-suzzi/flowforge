@@ -55,6 +55,8 @@ export default function ContentTypes() {
       setShowForm(false);
       const r = await api.get('/api/v1/content-types');
       setContentTypes(r.data || []);
+    } catch {
+      toast.error('Failed to create content type');
     } finally {
       setSaving(false);
     }
@@ -67,6 +69,8 @@ export default function ContentTypes() {
       setShowTemplates(false);
       const r = await api.get('/api/v1/content-types');
       setContentTypes(r.data || []);
+    } catch {
+      toast.error('Failed to apply template');
     } finally {
       setSaving(false);
     }
@@ -74,15 +78,23 @@ export default function ContentTypes() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this content type?')) return;
-    await api.delete(`/api/v1/content-types/${id}`);
-    const r = await api.get('/api/v1/content-types');
-    setContentTypes(r.data || []);
+    try {
+      await api.delete(`/api/v1/content-types/${id}`);
+      const r = await api.get('/api/v1/content-types');
+      setContentTypes(r.data || []);
+    } catch {
+      toast.error('Failed to delete content type');
+    }
   };
 
   const handleDuplicate = async (id) => {
-    await api.post(`/api/v1/content-types/${id}/duplicate`);
-    const r = await api.get('/api/v1/content-types');
-    setContentTypes(r.data || []);
+    try {
+      await api.post(`/api/v1/content-types/${id}/duplicate`);
+      const r = await api.get('/api/v1/content-types');
+      setContentTypes(r.data || []);
+    } catch {
+      toast.error('Failed to duplicate');
+    }
   };
 
   const addField = () => {

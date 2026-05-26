@@ -1,12 +1,12 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import TenantThemeProvider from './components/TenantThemeProvider';
 import { useRole } from './hooks/useRole';
-import { setAuthTokenGetter } from './utils/api';
+import { setAuthTokenGetter, setNavigationHandler } from './utils/api';
 import Landing from './pages/Landing';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ContentTypes = lazy(() => import('./pages/ContentTypes'));
@@ -145,10 +145,20 @@ function PageLoader() {
   );
 }
 
+function NavigationBridge() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setNavigationHandler((path) => navigate(path));
+    return () => setNavigationHandler(null);
+  }, [navigate]);
+  return null;
+}
+
 export default function App() {
   return (
     <>
       <AuthTokenBridge />
+      <NavigationBridge />
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />

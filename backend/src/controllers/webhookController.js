@@ -32,10 +32,15 @@ export const getAll = async (req, res) => {
 
 export const update = async (req, res) => {
     try {
+        const allowed = ['name', 'url', 'events', 'contentType', 'secret', 'maxRetries', 'retryDelayMs', 'conditions', 'isActive'];
+        const updates = {};
+        for (const key of allowed) {
+            if (req.body[key] !== undefined) updates[key] = req.body[key];
+        }
         const webhook = await Webhook.findOneAndUpdate(
             { _id: req.params.id, tenantId: req.tenant },
-            req.body,
-            { new: true }
+            updates,
+            { new: true, runValidators: true }
         );
         res.json(webhook);
     } catch (err) {

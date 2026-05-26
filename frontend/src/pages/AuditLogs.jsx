@@ -33,7 +33,7 @@ export default function AuditLogs() {
 
     api.get('/api/v1/audit-logs/stats').then(r => {
       setStats(r.data || []);
-    });
+    }).catch(() => {});
   }, [page, filter]);
 
   const columns = [

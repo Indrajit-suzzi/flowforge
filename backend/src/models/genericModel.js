@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from 'bcryptjs';
 
 const modelCache = {};
 
@@ -53,6 +54,27 @@ const getModel = (name, schemaDefinition) => {
     }
   );
 
+  schema.pre('save', async function (next) {
+    if (this.isModified('accessPassword') && this.accessPassword && !this.accessPassword.startsWith('$2a$') && !this.accessPassword.startsWith('$2b$')) {
+      this.accessPassword = await bcrypt.hash(this.accessPassword, 10);
+    }
+    next();
+  });
+
+  schema.pre('findOneAndUpdate', async function (next) {
+    const update = this.getUpdate();
+    const password = update.accessPassword || update.$set?.accessPassword;
+    if (password && typeof password === 'string' && !password.startsWith('$2a$') && !password.startsWith('$2b$')) {
+      const hashed = await bcrypt.hash(password, 10);
+      if (update.accessPassword) {
+        update.accessPassword = hashed;
+      } else {
+        update.$set.accessPassword = hashed;
+      }
+    }
+    next();
+  });
+
   schema.index({ tenantId: 1, isDeleted: 1, createdAt: -1 });
   schema.index({ tenantId: 1, status: 1, publishedAt: -1 });
   schema.index({ tenantId: 1, scheduledPublishAt: 1 }, { sparse: true });
@@ -67,6 +89,12 @@ const getModel = (name, schemaDefinition) => {
   modelCache[name] = model;
 
   return model;
+};
+
+export const clearModelCache = (name) => {
+  delete modelCache[name];
+  delete mongoose.models[name];
+  delete mongoose.modelSchemas[name];
 };
 
 export default getModel;

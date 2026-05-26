@@ -1,11 +1,14 @@
 import express from 'express';
 import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const cts = await ContentType.find({ tenantId: req.tenant });
     const breakdown = [];
@@ -42,7 +45,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/export', async (req, res) => {
+router.get('/export', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const cts = await ContentType.find({ tenantId: req.tenant });
     const result = {};
@@ -60,13 +63,13 @@ router.get('/export', async (req, res) => {
   }
 });
 
-router.post('/seed', async (req, res) => {
+router.post('/seed', authMiddleware, tenantMiddleware, roleMiddleware('systemSettings'), async (req, res) => {
   try {
-    const { execSync } = await import('child_process');
-    execSync('node seed.js --force', { cwd: process.cwd(), stdio: 'pipe' });
+    const { runSeed } = await import('../utils/seeder.js');
+    await runSeed(req.tenant);
     res.json({ message: 'Database re-seeded' });
-  } catch (_err) {
-    res.status(500).json({ error: 'Seed failed, check server logs' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

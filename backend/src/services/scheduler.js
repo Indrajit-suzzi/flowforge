@@ -12,7 +12,7 @@ const saveVersion = async ({ tenantId, contentTypeSlug, contentTypeName, entryId
   await ContentVersion.create({
     tenantId, contentTypeSlug, contentTypeName, entryId,
     version, data, status: status || data.status || 'draft',
-    changeDescription: description || ''
+    createdBy: 'scheduler', changeDescription: description || ''
   });
 };
 
@@ -23,7 +23,11 @@ const processTenantContentType = async (ct) => {
   const toPublish = await Model.find({
     tenantId: ct.tenantId,
     scheduledPublishAt: { $lte: now, $ne: null },
-    status: { $ne: 'published' }
+    status: { $ne: 'published' },
+    $or: [
+      { scheduledUnpublishAt: null },
+      { scheduledUnpublishAt: { $gt: now } }
+    ]
   });
 
   for (const entry of toPublish) {
@@ -38,7 +42,7 @@ const processTenantContentType = async (ct) => {
       description: 'Auto-published by scheduler'
     });
 
-    triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.publish', contentType: ct.slug, data: entry });
+    try { await triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.publish', contentType: ct.slug, data: entry }); } catch { /* best-effort */ }
   }
 
   const toUnpublish = await Model.find({
@@ -59,7 +63,7 @@ const processTenantContentType = async (ct) => {
       description: 'Auto-unpublished by scheduler'
     });
 
-    triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.unpublish', contentType: ct.slug, data: entry });
+    try { await triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.unpublish', contentType: ct.slug, data: entry }); } catch { /* best-effort */ }
   }
 
   return { published: toPublish.length, unpublished: toUnpublish.length };
@@ -72,9 +76,13 @@ export const runScheduler = async () => {
     let totalUnpublished = 0;
 
     for (const ct of contentTypes) {
-      const result = await processTenantContentType(ct);
-      totalPublished += result.published;
-      totalUnpublished += result.unpublished;
+      try {
+        const result = await processTenantContentType(ct);
+        totalPublished += result.published;
+        totalUnpublished += result.unpublished;
+      } catch (err) {
+        logger.error({ err, contentType: ct.name, tenantId: ct.tenantId }, 'Scheduler error for content type');
+      }
     }
 
     if (totalPublished > 0 || totalUnpublished > 0) {

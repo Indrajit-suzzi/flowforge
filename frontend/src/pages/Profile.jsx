@@ -62,6 +62,7 @@ export default function Profile() {
     try {
       if (current.isClerk) {
         await current.user.update({ firstName: form.username });
+        await current.user.reload();
       } else {
         await api.put('/api/v1/users/me', { username: form.username });
       }

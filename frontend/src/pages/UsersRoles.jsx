@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Shield, User, Ban, Edit2, Users } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import Pagination from '../components/Pagination';
@@ -14,15 +15,16 @@ const defaultRoleColors = [
 ];
 
 export default function UsersRoles() {
+  const toast = useToast();
   const { isAdmin } = useRole();
   const [users, setUsers] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'member' });
   const [page, setPage] = useState(1);
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'member' });
   const [totalPages, setTotalPages] = useState(1);
+  const [roles, setRoles] = useState([]);
 
   useEffect(() => {
     Promise.all([
@@ -49,6 +51,8 @@ export default function UsersRoles() {
       setEditingUser(null);
       const r = await api.get('/api/v1/users');
       setUsers(r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save user');
     } finally {
       setSaving(false);
     }
@@ -56,13 +60,21 @@ export default function UsersRoles() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this user?')) return;
-    await api.delete(`/api/v1/users/${id}`);
-    setUsers(users.filter(u => u._id !== id));
+    try {
+      await api.delete(`/api/v1/users/${id}`);
+      setUsers(users.filter(u => u._id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete user');
+    }
   };
 
   const toggleActive = async (user) => {
-    await api.put(`/api/v1/users/${user._id}`, { isActive: !user.isActive });
-    setUsers(users.map(u => u._id === user._id ? { ...u, isActive: !u.isActive } : u));
+    try {
+      await api.put(`/api/v1/users/${user._id}`, { isActive: !user.isActive });
+      setUsers(users.map(u => u._id === user._id ? { ...u, isActive: !u.isActive } : u));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to toggle user status');
+    }
   };
 
   if (!isAdmin) {

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import User from "../models/user.js";
 
 export const register = async (req, res) => {
@@ -22,7 +23,8 @@ export const register = async (req, res) => {
       user: safeUser,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({ error: isProduction ? 'Registration failed' : err.message });
   }
 };
 
@@ -30,23 +32,24 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ message: "Account disabled" });
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    const token = jwt.sign({
+      id: user._id,
+      role: user.role,
+      iat: Math.floor(Date.now() / 1000),
+      jti: crypto.randomUUID(),
+    }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
@@ -54,6 +57,7 @@ export const login = async (req, res) => {
 
     res.json({ token, user: safeUser });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({ error: isProduction ? 'Login failed' : err.message });
   }
 };

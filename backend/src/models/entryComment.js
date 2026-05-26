@@ -11,6 +11,7 @@ const entryCommentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 entryCommentSchema.index({ entryId: 1, tenantId: 1, createdAt: -1 });
+entryCommentSchema.index({ tenantId: 1, contentTypeSlug: 1 });
 
 const EntryComment = mongoose.models.EntryComment || mongoose.model('EntryComment', entryCommentSchema);
 

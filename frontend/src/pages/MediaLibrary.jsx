@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
@@ -8,6 +9,7 @@ import Pagination from '../components/Pagination';
 const typeIcons = { image: Image, document: FileText, video: Video, audio: Music, other: FileText };
 
 export default function MediaLibrary() {
+  const toast = useToast();
   const [media, setMedia] = useState([]);
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -23,28 +25,52 @@ export default function MediaLibrary() {
     }).catch(() => {}); 
   }, [filter, page]);
 
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'application/pdf', 'application/json', 'text/plain', 'text/csv'];
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!ALLOWED_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
+      alert(`File type "${file.type}" is not allowed.`);
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File is too large. Maximum size is 50MB.`);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
-    await api.post('/api/v1/media', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    const r = await api.get(`/api/v1/media?page=${page}`);
-    setMedia(r.data?.data || r.data || []);
+    try {
+      await api.post('/api/v1/media', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const r = await api.get(`/api/v1/media?page=${page}`);
+      setMedia(r.data?.data || r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Upload failed');
+    }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this file?')) return;
-    await api.delete(`/api/v1/media/${id}`);
-    setMedia(media.filter(m => m._id !== id));
+    try {
+      await api.delete(`/api/v1/media/${id}`);
+      setMedia(media.filter(m => m._id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete file');
+    }
   };
 
   const copyUrl = async (url, id) => {
-    await navigator.clipboard.writeText(url);
-    setCopied(id);
-    setTimeout(() => setCopied(null), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      toast.error('Failed to copy URL');
+    }
   };
 
   const filterActions = (

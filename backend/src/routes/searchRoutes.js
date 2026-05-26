@@ -2,14 +2,18 @@ import mongoose from 'mongoose';
 import express from 'express';
 import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
 
 const router = express.Router();
 
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
+const MAX_SEARCH_LIMIT = 100;
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
-    const { q, limit = 20 } = req.query;
+    const { q } = req.query;
+    const limit = Math.min(parseInt(req.query.limit) || 20, MAX_SEARCH_LIMIT);
     if (!q || q.trim().length < 2) {
       return res.json({ status: 'success', data: [], total: 0 });
     }

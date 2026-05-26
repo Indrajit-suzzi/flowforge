@@ -91,57 +91,81 @@ export default function ContentEntries() {
     try {
       if (editingEntry) {
         await api.put(`/api/v1/dynamic/${slug}/${editingEntry._id}`, form);
-        await releaseLock();
       } else {
         await api.post(`/api/v1/dynamic/${slug}`, form);
+      }
+      if (editingEntry) {
+        try { await releaseLock(); } catch { /* best-effort */ }
       }
       setShowForm(false);
       setEditingEntry(null);
       const r = await api.get(`/api/v1/dynamic/${slug}`);
       setEntries(r.data?.data || r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save');
     } finally {
       setSaving(false);
     }
   };
 
   const toggleStatus = async (entry) => {
-    const action = entry.status === 'published' ? 'unpublish' : 'publish';
-    await api.patch(`/api/v1/dynamic/${slug}/${entry._id}/${action}`);
-    const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data?.data || r.data || []);
+    try {
+      const action = entry.status === 'published' ? 'unpublish' : 'publish';
+      await api.patch(`/api/v1/dynamic/${slug}/${entry._id}/${action}`);
+      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      setEntries(r.data?.data || r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to toggle status');
+    }
   };
 
   const bulkDelete = async () => {
     if (!confirm(`Delete ${selected.length} entries?`)) return;
-    for (const id of selected) {
-      await api.delete(`/api/v1/dynamic/${slug}/${id}`);
+    try {
+      for (const id of selected) {
+        await api.delete(`/api/v1/dynamic/${slug}/${id}`);
+      }
+      setSelected([]);
+      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      setEntries(r.data?.data || r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete entries');
     }
-    setSelected([]);
-    const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data?.data || r.data || []);
   };
 
   const bulkPublish = async () => {
-    for (const id of selected) {
-      await api.patch(`/api/v1/dynamic/${slug}/${id}/publish`);
+    try {
+      for (const id of selected) {
+        await api.patch(`/api/v1/dynamic/${slug}/${id}/publish`);
+      }
+      setSelected([]);
+      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      setEntries(r.data?.data || r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to publish entries');
     }
-    setSelected([]);
-    const r = await api.get(`/api/v1/dynamic/${slug}`);
-    setEntries(r.data?.data || r.data || []);
   };
 
   const startEdit = async (entry) => {
-    const result = await acquireLock();
-    if (!result || !result.acquired) return;
-    setEditingEntry(entry);
-    const editForm = { status: entry.status, locale: entry.locale || contentType.locales?.[0] || 'en', scheduledPublishAt: entry.scheduledPublishAt || '', scheduledUnpublishAt: entry.scheduledUnpublishAt || '', accessPassword: '', notes: entry.notes || '', tags: entry.tags || [] };
-    contentType.fields.forEach(f => editForm[f.name] = entry[f.name] ?? (f.type === 'Boolean' ? false : ''));
-    setForm(editForm);
-    setShowForm(true);
+    try {
+      const result = await acquireLock();
+      if (!result || !result.acquired) return;
+      setEditingEntry(entry);
+      const editForm = { status: entry.status, locale: entry.locale || contentType.locales?.[0] || 'en', scheduledPublishAt: entry.scheduledPublishAt || '', scheduledUnpublishAt: entry.scheduledUnpublishAt || '', accessPassword: '', notes: entry.notes || '', tags: entry.tags || [] };
+      contentType.fields.forEach(f => editForm[f.name] = entry[f.name] ?? (f.type === 'Boolean' ? false : ''));
+      setForm(editForm);
+      setShowForm(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to start editing');
+    }
   };
 
   const cancelEdit = async () => {
-    if (editingEntry) await releaseLock();
+    try {
+      if (editingEntry) await releaseLock();
+    } catch {
+      // best-effort lock release
+    }
     setEditingEntry(null);
     setShowForm(false);
   };
@@ -149,7 +173,7 @@ export default function ContentEntries() {
   const filtered = entries.filter(e => {
     if (!search) return true;
     const s = search.toLowerCase();
-    return Object.values(e).some(v => String(v).toLowerCase().includes(s));
+    return Object.values(e).some(v => (typeof v === 'string' || typeof v === 'number') && String(v).toLowerCase().includes(s));
   });
 
   if (!contentType) return <div style={{ padding: '32px', color: '#fca5a5' }}>Content type not found</div>;
@@ -231,10 +255,10 @@ export default function ContentEntries() {
         <div style={{ display: 'flex', gap: '4px' }}>
           {showTrash ? (
             <>
-              <button onClick={async (e) => { e.stopPropagation(); await api.patch(`/api/v1/dynamic/${slug}/${item._id}/restore`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); }} className="btn-ghost" style={{ padding: '6px', color: '#34d399' }} title="Restore">
+              <button onClick={async (e) => { e.stopPropagation(); try { await api.patch(`/api/v1/dynamic/${slug}/${item._id}/restore`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to restore'); } }} className="btn-ghost" style={{ padding: '6px', color: '#34d399' }} title="Restore">
                 <RotateCw style={{ width: '14px', height: '14px' }} />
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); if (confirm('Permanently delete this entry?')) { await api.delete(`/api/v1/dynamic/${slug}/${item._id}/permanent`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }} title="Delete permanently">
+              <button onClick={async (e) => { e.stopPropagation(); if (confirm('Permanently delete this entry?')) { try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}/permanent`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }} title="Delete permanently">
                 <Trash2 style={{ width: '14px', height: '14px' }} />
               </button>
             </>
@@ -246,7 +270,7 @@ export default function ContentEntries() {
               <button onClick={(e) => { e.stopPropagation(); setCommentEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Comments">
                 <MessageSquare style={{ width: '14px', height: '14px' }} />
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data?.data || r.data || []); }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate">
+              <button onClick={async (e) => { e.stopPropagation(); try { await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data?.data || r.data || []); } catch { toast.error('Failed to duplicate'); } }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate">
                 <Copy style={{ width: '14px', height: '14px' }} />
               </button>
               <button onClick={(e) => { e.stopPropagation(); setVersionEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Version history">
@@ -258,7 +282,7 @@ export default function ContentEntries() {
               <button onClick={(e) => { e.stopPropagation(); toggleStatus(item); }} className="btn-ghost" style={{ padding: '6px' }}>
                 {item.status === 'published' ? <EyeOff style={{ width: '14px', height: '14px' }} /> : <Eye style={{ width: '14px', height: '14px' }} />}
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); await api.delete(`/api/v1/dynamic/${slug}/${item._id}`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }}>
+              <button onClick={async (e) => { e.stopPropagation(); try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }}>
                 <Trash2 style={{ width: '14px', height: '14px' }} />
               </button>
             </>
@@ -460,7 +484,7 @@ export default function ContentEntries() {
               </h4>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>Access Password (leave empty for public)</label>
-                <input type="text" value={form.accessPassword || ''} onChange={e => setForm({ ...form, accessPassword: e.target.value })} className="input-field" placeholder="Set a password to protect this entry" disabled={editingEntry && lock && !lock.acquired} />
+                <input type="password" value={form.accessPassword || ''} onChange={e => setForm({ ...form, accessPassword: e.target.value })} className="input-field" placeholder="Set a password to protect this entry" disabled={editingEntry && lock && !lock.acquired} />
               </div>
             </div>
 
@@ -527,8 +551,12 @@ export default function ContentEntries() {
         entryName={contentType.fields.map(f => versionEntry[f.name]).filter(Boolean)[0] || versionEntry._id}
         onClose={() => setVersionEntry(null)}
         onRollback={async () => {
-          const r = await api.get(`/api/v1/dynamic/${slug}`);
-          setEntries(r.data?.data || r.data || []);
+          try {
+            const r = await api.get(`/api/v1/dynamic/${slug}`);
+            setEntries(r.data?.data || r.data || []);
+          } catch {
+            // best-effort refresh after rollback
+          }
         }}
       />
     )}

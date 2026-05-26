@@ -1,11 +1,14 @@
 import express from 'express';
 import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const now = new Date();
     const year = parseInt(req.query.year) || now.getFullYear();
@@ -64,7 +67,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/clear', async (req, res) => {
+router.post('/clear', authMiddleware, tenantMiddleware, roleMiddleware('contentEntries'), async (req, res) => {
   try {
     const contentTypes = await ContentType.find({ tenantId: req.tenant });
     let cleared = 0;

@@ -11,6 +11,14 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const ALLOWED_EXTENSIONS = new Set([
+    'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif',
+    'pdf', 'doc', 'docx', 'csv', 'json', 'xml',
+    'mp4', 'webm', 'mov',
+    'mp3', 'wav', 'ogg',
+    'zip', 'gz', 'tar',
+]);
+
 export const upload = async (req, res) => {
     try {
         if (!req.files || !req.files.file) {
@@ -18,8 +26,16 @@ export const upload = async (req, res) => {
         }
 
         const file = req.files.file;
-        const fileName = `${Date.now()}-${file.name.replace(/\s/g, '-')}`;
-        const filePath = path.join(uploadsDir, fileName);
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXTENSIONS.has(ext)) {
+            return res.status(400).json({ error: `File type .${ext} is not allowed` });
+        }
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '').replace(/\s/g, '-');
+        const fileName = `${Date.now()}-${safeName}`;
+        const filePath = path.resolve(path.join(uploadsDir, fileName));
+        if (!filePath.startsWith(path.resolve(uploadsDir))) {
+            return res.status(400).json({ error: "Invalid file path" });
+        }
         
         await file.mv(filePath);
 
@@ -69,11 +85,10 @@ export const getAll = async (req, res) => {
 export const remove = async (req, res) => {
     try {
         const media = await Media.findOneAndDelete({ _id: req.params.id, tenantId: req.tenant });
-        if (media) {
-            const filePath = path.join(uploadsDir, media.name);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+        if (!media) return res.status(404).json({ error: "File not found" });
+        const filePath = path.resolve(path.join(uploadsDir, media.name));
+        if (filePath.startsWith(path.resolve(uploadsDir)) && fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
         }
         res.json({ message: "File deleted" });
     } catch (err) {
@@ -83,7 +98,14 @@ export const remove = async (req, res) => {
 
 export const serveFile = async (req, res) => {
     try {
-        const filePath = path.join(uploadsDir, req.params.fileName);
+        const fileName = path.basename(req.params.fileName);
+        if (fileName !== req.params.fileName) {
+            return res.status(400).json({ error: "Invalid file name" });
+        }
+        const filePath = path.resolve(path.join(uploadsDir, fileName));
+        if (!filePath.startsWith(path.resolve(uploadsDir))) {
+            return res.status(400).json({ error: "Invalid file path" });
+        }
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: "File not found" });
         }

@@ -7,20 +7,19 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('auth_token'));
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!localStorage.getItem('auth_token'));
 
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.Authorization = `Bearer ${token}`;
-      api.get('/api/v1/users/me')
-        .then(res => setUser(res.data))
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          setToken(null);
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    }
+    if (!token) return;
+    api.defaults.headers.Authorization = `Bearer ${token}`;
+    api.get('/api/v1/users/me')
+      .then(res => setUser(res.data))
+      .catch(() => {
+        localStorage.removeItem('auth_token');
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, [token]);
 
   const login = async (email, password) => {

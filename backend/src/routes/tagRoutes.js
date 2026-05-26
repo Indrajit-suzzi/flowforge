@@ -1,10 +1,13 @@
 import express from 'express';
 import Tag from '../models/tag.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
 // GET /api/v1/tags — List all tags
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const tags = await Tag.find({ tenantId: req.tenant }).sort({ name: 1 });
     res.json(tags);
@@ -14,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/v1/tags — Create a tag
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
   try {
     const { name, slug, color } = req.body;
     if (!name || !slug) return res.status(400).json({ message: 'name and slug are required' });
@@ -28,7 +31,7 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE /api/v1/tags/:id — Delete a tag
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
   try {
     const tag = await Tag.findOneAndDelete({ _id: req.params.id, tenantId: req.tenant });
     if (!tag) return res.status(404).json({ message: 'Tag not found' });

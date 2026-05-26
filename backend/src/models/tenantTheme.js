@@ -10,4 +10,5 @@ const tenantThemeSchema = new mongoose.Schema({
   customCss: { type: String, default: '' },
 }, { timestamps: true });
 
-export default mongoose.model('TenantTheme', tenantThemeSchema);
+const TenantTheme = mongoose.models.TenantTheme || mongoose.model('TenantTheme', tenantThemeSchema);
+export default TenantTheme;

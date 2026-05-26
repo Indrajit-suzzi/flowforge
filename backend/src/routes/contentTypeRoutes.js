@@ -1,18 +1,31 @@
 import express from 'express';
 import ContentType from '../models/contentType.js';
+import getModel, { clearModelCache } from '../models/genericModel.js';
+import ContentVersion from '../models/contentVersion.js';
+import EntryComment from '../models/entryComment.js';
+import EntryLock from '../models/entryLock.js';
 import { contentTemplates } from '../utils/contentTemplates.js';
 import { logAudit } from '../utils/auditLogger.js';
 import validate from '../middlewares/validateMiddleware.js';
 import { createContentTypeSchema, updateContentTypeSchema } from '../utils/validationSchemas.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
+const CONTENT_TYPE_ALLOWED = ['name', 'slug', 'fields', 'locales', 'description', 'cacheTTL'];
+
 // Protected endpoints
-router.post('/', validate(createContentTypeSchema), async (req, res) => {
+router.post('/', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), validate(createContentTypeSchema), async (req, res) => {
     try {
-        req.body.tenantId = req.tenant;
-        if (!req.body.locales || req.body.locales.length === 0) req.body.locales = ['en'];
-        const ct = await ContentType.create(req.body);
+        const body = {};
+        for (const key of CONTENT_TYPE_ALLOWED) {
+            if (req.body[key] !== undefined) body[key] = req.body[key];
+        }
+        body.tenantId = req.tenant;
+        if (!body.locales || body.locales.length === 0) body.locales = ['en'];
+        const ct = await ContentType.create(body);
         await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
         res.status(201).json(ct);
     } catch (err) {
@@ -20,7 +33,7 @@ router.post('/', validate(createContentTypeSchema), async (req, res) => {
     }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
     try {
         const cts = await ContentType.find({ tenantId: req.tenant });
         res.json(cts);
@@ -29,7 +42,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/from-template', async (req, res) => {
+router.post('/from-template', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
     try {
         const { templateSlug } = req.body;
         const template = contentTemplates.find(t => t.slug === templateSlug);
@@ -50,7 +63,7 @@ router.post('/from-template', async (req, res) => {
     }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, tenantMiddleware, async (req, res) => {
     try {
         const ct = await ContentType.findOne({ _id: req.params.id, tenantId: req.tenant });
         if (!ct) return res.status(404).json({ message: 'Not found' });
@@ -60,9 +73,13 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.put('/:id', validate(updateContentTypeSchema), async (req, res) => {
+router.put('/:id', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), validate(updateContentTypeSchema), async (req, res) => {
     try {
-        const ct = await ContentType.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, req.body, { new: true });
+        const body = {};
+        for (const key of CONTENT_TYPE_ALLOWED) {
+            if (req.body[key] !== undefined) body[key] = req.body[key];
+        }
+        const ct = await ContentType.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, body, { new: true });
         if (!ct) return res.status(404).json({ message: 'Not found' });
         res.json(ct);
     } catch (err) {
@@ -70,7 +87,7 @@ router.put('/:id', validate(updateContentTypeSchema), async (req, res) => {
     }
 });
 
-router.post('/:id/duplicate', async (req, res) => {
+router.post('/:id/duplicate', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
   try {
     const ct = await ContentType.findOne({ _id: req.params.id, tenantId: req.tenant });
     if (!ct) return res.status(404).json({ message: 'Not found' });
@@ -89,10 +106,16 @@ router.post('/:id/duplicate', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
     try {
         const ct = await ContentType.findOneAndDelete({ _id: req.params.id, tenantId: req.tenant });
         if (!ct) return res.status(404).json({ message: 'Not found' });
+        const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, String])));
+        await Model.deleteMany({ tenantId: req.tenant });
+        await ContentVersion.deleteMany({ tenantId: req.tenant, contentTypeSlug: ct.slug });
+        await EntryComment.deleteMany({ tenantId: req.tenant, contentTypeSlug: ct.slug });
+        await EntryLock.deleteMany({ tenantId: req.tenant, contentTypeSlug: ct.slug });
+        clearModelCache(ct.name);
         await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'delete', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
         res.json({ message: 'Deleted' });
     } catch (err) {
@@ -100,7 +123,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.get('/:id/export/json', async (req, res) => {
+router.get('/:id/export/json', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const ct = await ContentType.findOne({ _id: req.params.id, tenantId: req.tenant });
     if (!ct) return res.status(404).json({ message: 'Not found' });
@@ -117,25 +140,28 @@ router.get('/:id/export/json', async (req, res) => {
   }
 });
 
-router.post('/import/json', async (req, res) => {
+router.post('/import/json', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), async (req, res) => {
   try {
-    const { name, slug, fields, locales } = req.body;
+    const { name, slug, fields, locales, cacheTTL } = req.body;
     if (!name || !slug || !fields) return res.status(400).json({ message: 'name, slug, and fields are required' });
     const existing = await ContentType.findOne({ slug, tenantId: req.tenant });
     if (existing) return res.status(409).json({ message: `Content type with slug "${slug}" already exists` });
+    const FIELD_ALLOWED = ['name', 'type', 'required', 'localizable', 'refContentType', 'pattern', 'patternMessage', 'minLength', 'maxLength', 'min', 'max', 'defaultValue'];
     const ct = await ContentType.create({
       tenantId: req.tenant,
       name,
       slug,
-      fields: fields.map(f => ({
-        name: f.name, type: f.type, required: f.required || false,
-        localizable: f.localizable || false, refContentType: f.refContentType,
-        pattern: f.pattern, patternMessage: f.patternMessage,
-        minLength: f.minLength, maxLength: f.maxLength,
-        min: f.min, max: f.max, defaultValue: f.defaultValue
-      })),
+      fields: (fields || []).map(f => {
+        const sanitized = {};
+        for (const key of FIELD_ALLOWED) {
+          if (f[key] !== undefined) sanitized[key] = f[key];
+        }
+        sanitized.required = f.required || false;
+        sanitized.localizable = f.localizable || false;
+        return sanitized;
+      }),
       locales: locales || ['en'],
-      cacheTTL: req.body.cacheTTL || 0
+      cacheTTL: typeof cacheTTL === 'number' ? cacheTTL : 0
     });
     await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
     res.status(201).json(ct);

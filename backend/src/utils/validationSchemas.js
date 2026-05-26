@@ -93,3 +93,19 @@ export const createWebhookSchema = Joi.object({
     value: Joi.any(),
   })),
 });
+
+export const updateWebhookSchema = Joi.object({
+  name: Joi.string().min(1).max(200),
+  url: Joi.string().uri(),
+  events: Joi.array().items(Joi.string()).min(1),
+  secret: Joi.string().min(16).max(256),
+  contentType: Joi.string().allow(''),
+  isActive: Joi.boolean(),
+  maxRetries: Joi.number().integer().min(0).max(10),
+  retryDelayMs: Joi.number().integer().min(1000).max(3600000),
+  conditions: Joi.array().items(Joi.object({
+    field: Joi.string().required(),
+    operator: Joi.string().valid('equals', 'not_equals', 'contains', 'exists', 'not_exists').required(),
+    value: Joi.any(),
+  })),
+}).min(1);

@@ -4,12 +4,14 @@ import mongoose from 'mongoose';
 export const getAuditLogs = async (req, res) => {
     try {
         const tenantId = req.tenantId || req.tenant;
-        const { page = 1, limit = 50, action, entityType, userId } = req.query;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const { action, entityType, userId } = req.query;
 
-        const filter = { tenantId: new mongoose.Types.ObjectId(tenantId) };
-        if (action) filter.action = action;
-        if (entityType) filter.entityType = entityType;
-        if (userId) filter.userId = userId;
+        const filter = { tenantId: new mongoose.Types.ObjectId(String(tenantId)) };
+        if (action && typeof action === 'string' && !action.startsWith('$')) filter.action = action;
+        if (entityType && typeof entityType === 'string' && !entityType.startsWith('$')) filter.entityType = entityType;
+        if (userId && typeof userId === 'string' && !userId.startsWith('$')) filter.userId = userId;
 
         const logs = await AuditLog.find(filter)
             .sort({ createdAt: -1 })
@@ -26,10 +28,10 @@ export const getAuditLogs = async (req, res) => {
 
 export const exportAuditLogsCSV = async (req, res) => {
   try {
-    const tenantId = req.tenantId;
-    const filter = { tenantId: new mongoose.Types.ObjectId(tenantId) };
-    if (req.query.action) filter.action = req.query.action;
-    if (req.query.entityType) filter.entityType = req.query.entityType;
+    const tenantId = req.tenantId || req.tenant;
+    const filter = { tenantId: new mongoose.Types.ObjectId(String(tenantId)) };
+    if (req.query.action && typeof req.query.action === 'string' && !req.query.action.startsWith('$')) filter.action = req.query.action;
+    if (req.query.entityType && typeof req.query.entityType === 'string' && !req.query.entityType.startsWith('$')) filter.entityType = req.query.entityType;
 
     const logs = await AuditLog.find(filter).sort({ createdAt: -1 }).lean();
 
@@ -56,10 +58,10 @@ export const exportAuditLogsCSV = async (req, res) => {
 
 export const getAuditStats = async (req, res) => {
     try {
-        const tenantId = req.tenantId;
+        const tenantId = req.tenantId || req.tenant;
 
         const stats = await AuditLog.aggregate([
-            { $match: { tenantId: new mongoose.Types.ObjectId(tenantId) } },
+            { $match: { tenantId: new mongoose.Types.ObjectId(String(tenantId)) } },
             { $group: { _id: '$action', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);

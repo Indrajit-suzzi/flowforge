@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Copy, Check, Key, BarChart3, X } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
 const allPerms = ['read', 'write', 'delete'];
 
 export default function ApiKeys() {
+  const toast = useToast();
   const [apiKeys, setApiKeys] = useState([]);
   const [contentTypes, setContentTypes] = useState([]);
 
@@ -59,21 +61,29 @@ export default function ApiKeys() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const scopes = form.scopes.length === 0
-      ? [{ contentType: '*', permissions: ['read', 'write', 'delete'] }]
-      : form.scopes;
-    const res = await api.post('/api/v1/api-keys', { name: form.name, scopes, rateLimit: { maxRequests: form.maxRequests, windowMs: form.windowMs } });
-    setNewKey(res.data);
-    setForm({ name: '', scopes: [], maxRequests: 100, windowMs: 60000 });
-    setShowForm(false);
-    const r = await api.get('/api/v1/api-keys');
-    setApiKeys(r.data || []);
+    try {
+      const scopes = form.scopes.length === 0
+        ? [{ contentType: '*', permissions: ['read', 'write', 'delete'] }]
+        : form.scopes;
+      const res = await api.post('/api/v1/api-keys', { name: form.name, scopes, rateLimit: { maxRequests: form.maxRequests, windowMs: form.windowMs } });
+      setNewKey(res.data);
+      setForm({ name: '', scopes: [], maxRequests: 100, windowMs: 60000 });
+      setShowForm(false);
+      const r = await api.get('/api/v1/api-keys');
+      setApiKeys(r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to create API key');
+    }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Revoke this key?')) return;
-    await api.delete(`/api/v1/api-keys/${id}`);
-    setApiKeys(apiKeys.filter(k => k._id !== id));
+    try {
+      await api.delete(`/api/v1/api-keys/${id}`);
+      setApiKeys(apiKeys.filter(k => k._id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to revoke API key');
+    }
   };
 
   return (
@@ -198,7 +208,7 @@ export default function ApiKeys() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button onClick={async () => { setUsageData(null); try { const r = await api.get(`/api/v1/api-keys/${k._id}/usage?days=7`); setUsageData(r.data); } catch { /* empty */ } }} className="btn-ghost" style={{ padding: '8px', color: '#8b5cf6' }}>
+                <button onClick={async () => { setUsageData(null); try { const r = await api.get(`/api/v1/api-keys/${k._id}/usage?days=7`); setUsageData(r.data); } catch (err) { toast.error(err.response?.data?.message || err.message || 'Failed to load usage'); } }} className="btn-ghost" style={{ padding: '8px', color: '#8b5cf6' }}>
                   <BarChart3 style={{ width: '14px', height: '14px' }} />
                 </button>
                 <button onClick={() => handleDelete(k._id)} className="btn-ghost" style={{ padding: '8px', color: '#fca5a5' }}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info, Menu, X } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -84,6 +85,7 @@ export default function ApiDocs() {
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(null);
   const [activeSection, setActiveSection] = useState('getting-started');
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -97,9 +99,13 @@ export default function ApiDocs() {
   }, []);
 
   const copyToClipboard = async (text, id) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
   };
 
   const downloadMarkdown = () => {
@@ -110,6 +116,9 @@ export default function ApiDocs() {
       a.href = url;
       a.download = 'flowforge-api-docs.md';
       a.click();
+      URL.revokeObjectURL(url);
+    }).catch(err => {
+      toast.error(err.response?.data?.error || 'Failed to download documentation');
     });
   };
 
@@ -184,7 +193,7 @@ const posts = await client.get('/dynamic/blog');`;
       {posts.map(post => (
         <article key={post._id}>
           <h2>{post.title}</h2>
-          <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          <div>{post.content}</div>
         </article>
       ))}
     </div>

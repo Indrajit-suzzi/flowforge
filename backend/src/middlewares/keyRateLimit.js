@@ -1,4 +1,5 @@
 import KeyUsage from '../models/keyUsage.js';
+import logger from '../utils/logger.js';
 
 const keyStore = new Map();
 
@@ -52,7 +53,7 @@ const keyRateLimit = () => {
     const originalSend = res.send;
     const _start = Date.now();
     res.send = function (...args) {
-      KeyUsage.create({ keyId: apiKeyId, tenantId: req.apiKey.tenantId, method: req.method, path: req.originalUrl, statusCode: res.statusCode, timestamp: new Date() }).catch(() => {});
+      KeyUsage.create({ keyId: apiKeyId, tenantId: req.apiKey.tenantId, method: req.method, path: req.originalUrl, statusCode: res.statusCode, timestamp: new Date() }).catch(err => logger.error({ err }, 'KeyUsage create failed'));
       return originalSend.apply(this, args);
     };
 

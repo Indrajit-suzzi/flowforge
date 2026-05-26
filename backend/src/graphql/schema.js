@@ -34,6 +34,9 @@ export const schema = buildSchema(`
     slug: String!
     fields: [Field!]!
     locales: [String!]
+    cacheTTL: Int
+    workflowEnabled: Boolean
+    workflowStages: JSON
     createdAt: String!
     updatedAt: String!
   }
@@ -44,6 +47,13 @@ export const schema = buildSchema(`
     required: Boolean!
     localizable: Boolean!
     refContentType: String
+    pattern: String
+    patternMessage: String
+    minLength: Int
+    maxLength: Int
+    min: Float
+    max: Float
+    defaultValue: JSON
   }
 
   input FieldInput {
@@ -52,6 +62,13 @@ export const schema = buildSchema(`
     required: Boolean
     localizable: Boolean
     refContentType: String
+    pattern: String
+    patternMessage: String
+    minLength: Int
+    maxLength: Int
+    min: Float
+    max: Float
+    defaultValue: JSON
   }
 
   type Entry {
@@ -64,7 +81,9 @@ export const schema = buildSchema(`
     scheduledUnpublishAt: String
     createdAt: String
     updatedAt: String
+    tags: [String]
     translations: JSON
+    data: JSON
   }
 
   type ApiKey {
@@ -72,7 +91,10 @@ export const schema = buildSchema(`
     name: String!
     keyPreview: String!
     isActive: Boolean!
+    scopes: JSON
+    rateLimit: JSON
     createdAt: String!
+    updatedAt: String!
   }
 
   type ApiKeyCreateResult {
@@ -81,6 +103,7 @@ export const schema = buildSchema(`
     key: String!
     isActive: Boolean!
     createdAt: String!
+    updatedAt: String!
   }
 
   type User {
@@ -89,16 +112,24 @@ export const schema = buildSchema(`
     email: String!
     role: String!
     isActive: Boolean!
+    preferences: JSON
     createdAt: String!
+    updatedAt: String!
   }
 
   type Media {
     _id: ID!
     originalName: String!
+    name: String
     url: String!
     type: String!
+    mimeType: String
     size: Float!
+    width: Int
+    height: Int
+    alt: String
     createdAt: String!
+    updatedAt: String
   }
 
   type DeleteResult {

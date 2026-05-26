@@ -1,8 +1,12 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import fileUpload from 'express-fileupload';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { contentTemplates } from "./utils/contentTemplates.js";
 import logger from "./utils/logger.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
@@ -96,7 +100,7 @@ app.use("/api/v1/roles", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddl
 app.use("/api/v1/graphql", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, graphqlHandler);
 app.use("/api/v1/search", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, searchRoutes);
 app.use("/api/v1/theme", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, roleMiddleware('branding'), themeRoutes);
-app.use("/api/v1/forms", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, formRoutes);
+app.use("/api/v1/forms", apiLimiter, formRoutes);
 app.use("/api/v1/calendar", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, calendarRoutes);
 app.use("/api/v1/stats", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, statsRoutes);
 app.use("/api/v1/locks", apiLimiter, authMiddleware, keyRateLimit(), tenantMiddleware, lockRoutes);
@@ -161,8 +165,9 @@ app.get("/api/v1/sitemap.xml", async (req, res) => {
     if (!tenantId) return res.status(400).send('Tenant ID required');
     const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
+    const baseUrl = process.env.SITE_URL || 'https://flowforge.app';
     const cts = await ContentType.find({ tenantId });
-    let urls = `<url><loc>https://flowforge.app/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`;
+    let urls = `<url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`;
 
     for (const ct of cts) {
       const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
@@ -171,7 +176,7 @@ app.get("/api/v1/sitemap.xml", async (req, res) => {
       const _labelField = ct.fields[0]?.name || 'id';
       for (const entry of entries) {
         const updated = entry.updatedAt ? new Date(entry.updatedAt).toISOString() : '';
-        urls += `<url><loc>https://flowforge.app/${ct.slug}/${entry._id}</loc><lastmod>${updated}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+        urls += `<url><loc>${baseUrl}/${ct.slug}/${entry._id}</loc><lastmod>${updated}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       }
     }
 
@@ -188,13 +193,11 @@ app.get("/api/v1/theme.css", async (req, res) => {
     const { default: TenantTheme } = await import('./models/tenantTheme.js');
     const tenantId = req.headers['x-tenant-id'] || req.query.tenant || '';
     const theme = tenantId ? await TenantTheme.findOne({ tenantId }) : null;
-    const css = `
-:root {
+    const css = `:root {
   --color-primary: ${theme?.primaryColor || '#ff7e5f'};
   --color-accent: ${theme?.accentColor || '#8b5cf6'};
   --border-radius: ${theme?.borderRadius || 12}px;
   --font-heading: '${theme?.fontFamily || 'Outfit'}', sans-serif;
-  ${theme?.customCss || ''}
 }
 `;
     res.setHeader('Content-Type', 'text/css');
@@ -209,7 +212,7 @@ app.get("/", (req, res) => {
   res.json({ name: 'FlowForge API', version: '1.0.0', status: 'running' });
 });
 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', authMiddleware, express.static(path.join(__dirname, '..', 'uploads')));
 
 app.use(notFoundHandler);
 app.use(errorHandler);

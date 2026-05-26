@@ -1,9 +1,4 @@
-const DANGEROUS_KEYS = ['$where', '$regex', '$ne', '$gt', '$lt', '$gte', '$lte', '$in', '$nin', '$exists'];
-
 const hasDangerousKeys = (obj) => {
-  if (typeof obj === 'string') {
-    return DANGEROUS_KEYS.some(k => obj.includes(k));
-  }
   if (Array.isArray(obj)) {
     return obj.some(hasDangerousKeys);
   }
@@ -22,6 +17,9 @@ const sanitize = (req, res, next) => {
   }
   if (hasDangerousKeys(req.query)) {
     return res.status(400).json({ error: 'Query contains forbidden MongoDB operators' });
+  }
+  if (hasDangerousKeys(req.params)) {
+    return res.status(400).json({ error: 'URL parameters contain forbidden MongoDB operators' });
   }
   next();
 };

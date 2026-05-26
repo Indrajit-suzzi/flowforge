@@ -8,6 +8,6 @@ const router = express.Router();
 router.post('/', authMiddleware, tenantMiddleware, upload);
 router.get('/', authMiddleware, tenantMiddleware, getAll);
 router.delete('/:id', authMiddleware, tenantMiddleware, remove);
-router.get('/:fileName', serveFile);
+router.get('/:fileName', authMiddleware, tenantMiddleware, serveFile);
 
 export default router;

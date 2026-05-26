@@ -23,8 +23,8 @@ router.post('/:slug/:entryId', async (req, res) => {
       entryId: req.params.entryId,
       contentTypeSlug: req.params.slug,
       tenantId: req.tenant,
-      userId: req.user?.id || req.body.userId || 'unknown',
-      userName: req.body.userName || req.user?.name || 'Unknown',
+      userId: req.user?.id || 'unknown',
+      userName: req.user?.name || 'Unknown',
       body: body.trim(),
       parentCommentId: parentCommentId || null
     });
@@ -39,7 +39,7 @@ router.delete('/:slug/:entryId/:commentId', async (req, res) => {
   try {
     const comment = await EntryComment.findOne({ _id: req.params.commentId, tenantId: req.tenant });
     if (!comment) return res.status(404).json({ message: 'Comment not found' });
-    if (comment.userId !== (req.user?.id || req.query.userId)) {
+    if (!req.user?.id || comment.userId !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this comment' });
     }
     // Delete comment and its replies

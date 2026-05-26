@@ -1,10 +1,29 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import ApiKey from '../models/apiKey.js';
+import User from '../models/user.js';
+import logger from '../utils/logger.js';
 import { seedDefaultRoles } from '../utils/seedRoles.js';
 
 const clerkSecret = process.env.CLERK_SECRET_KEY;
 const useClerk = clerkSecret && clerkSecret !== 'your_clerk_secret_key_here';
+
+const resolveClerkUser = async (clerkId, sessionClaims) => {
+  let user = await User.findOne({ clerkId });
+  if (!user) {
+    const email = sessionClaims?.email || sessionClaims?.private_email || `${clerkId}@clerk.placeholder`;
+    user = await User.create({
+      clerkId,
+      username: clerkId.length > 30 ? clerkId.slice(0, 30) : clerkId,
+      email,
+      password: crypto.randomBytes(32).toString('hex'),
+      role: 'member',
+    });
+    logger.info({ clerkId }, 'Auto-created local user for Clerk ID');
+  }
+  return user;
+};
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -18,10 +37,12 @@ const authMiddleware = async (req, res, next) => {
         const { getAuth } = await import('@clerk/express');
         const auth = getAuth(req);
         if (auth.userId) {
-          req.user = { id: auth.userId };
-          req.tenant = auth.userId;
-          req.userRole = auth.sessionClaims?.metadata?.role || auth.sessionClaims?.public_metadata?.role || 'member';
-          seedDefaultRoles(req.tenant).catch(() => {});
+          const user = await resolveClerkUser(auth.userId, auth.sessionClaims);
+          req.user = { id: user._id.toString(), clerkUserId: auth.userId };
+          req.clerkSessionId = auth.sessionId;
+          req.tenant = user._id.toString();
+          req.userRole = auth.sessionClaims?.metadata?.role || auth.sessionClaims?.public_metadata?.role || user.role || 'member';
+          seedDefaultRoles(req.tenant).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
           return next();
         }
       } catch {
@@ -31,12 +52,14 @@ const authMiddleware = async (req, res, next) => {
       try {
         const { verifyToken } = await import('@clerk/backend');
         const claims = await verifyToken(token, { secretKey: clerkSecret });
-        req.user = { id: claims.sub };
-        req.tenant = claims.sub;
-        req.userRole = claims.metadata?.role || claims.public_metadata?.role || 'member';
+        const user = await resolveClerkUser(claims.sub, claims);
+        req.user = { id: user._id.toString(), clerkUserId: claims.sub };
+        req.clerkSessionId = claims.sid;
+        req.tenant = user._id.toString();
+        req.userRole = claims.metadata?.role || claims.public_metadata?.role || user.role || 'member';
         return next();
       } catch {
-        // Clerk token verification failed — fall through to JWT fallback
+        return res.status(401).json({ message: "Invalid token" });
       }
     }
 
@@ -45,7 +68,7 @@ const authMiddleware = async (req, res, next) => {
       req.user = { id: decoded.id };
       req.tenant = decoded.id;
       req.userRole = decoded.role || 'member';
-      seedDefaultRoles(req.tenant).catch(() => {});
+      seedDefaultRoles(req.tenant).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
       return next();
     } catch {
       return res.status(401).json({ message: "Invalid token" });
@@ -54,16 +77,26 @@ const authMiddleware = async (req, res, next) => {
 
   if (xApiKey) {
     try {
-      const keys = await ApiKey.find({ isActive: true });
-      for (const apiKey of keys) {
-        const isMatch = await bcrypt.compare(xApiKey, apiKey.key);
-        if (isMatch) {
-          req.tenant = apiKey.tenantId.toString();
-          req.apiKey = apiKey;
-          req.apiKeyId = apiKey._id;
-          seedDefaultRoles(req.tenant).catch(() => {});
-          return next();
+      const keyHash = crypto.createHash('sha256').update(xApiKey).digest('hex');
+      let matchedKey = await ApiKey.findOne({ keyHash, isActive: true });
+      if (!matchedKey) {
+        const allKeys = await ApiKey.find({ isActive: true });
+        for (const k of allKeys) {
+          if (await bcrypt.compare(xApiKey, k.key)) {
+            matchedKey = k;
+            if (!k.keyHash) {
+              await ApiKey.updateOne({ _id: k._id }, { keyHash });
+            }
+            break;
+          }
         }
+      }
+      if (matchedKey) {
+        req.tenant = matchedKey.tenantId.toString();
+        req.apiKey = matchedKey;
+        req.apiKeyId = matchedKey._id;
+        seedDefaultRoles(req.tenant).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
+        return next();
       }
       return res.status(401).json({ message: "Invalid API Key" });
     } catch (err) {

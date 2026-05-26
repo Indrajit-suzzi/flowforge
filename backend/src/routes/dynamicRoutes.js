@@ -6,10 +6,13 @@ import { logAudit } from '../utils/auditLogger.js';
 import { triggerWebhooks } from '../utils/webhookTrigger.js';
 import { cacheControl } from '../utils/cacheControl.js';
 import { validateEntry } from '../utils/fieldValidation.js';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
+
+const META_FIELDS = ['status', 'locale', 'translations', 'tags', 'accessPassword', 'notes', 'workflowStage'];
 
 const autoSlug = (ct, body) => {
   const slugField = ct.fields.find(f => f.name === 'slug' && (f.type === 'String' || f.type === 'RichText'));
@@ -81,15 +84,17 @@ router.post('/:modelName', async (req, res) => {
     if (validationErrors.length) return res.status(400).json({ error: 'Validation failed', details: validationErrors });
 
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
-    autoSlug(ct, req.body);
-    for (const f of ct.fields) {
-      if (f.defaultValue !== undefined && req.body[f.name] === undefined) {
-        req.body[f.name] = f.defaultValue;
-      }
+    const body = {};
+    for (const key of META_FIELDS) {
+      if (req.body[key] !== undefined) body[key] = req.body[key];
     }
-    if (req.body.scheduledPublishAt) req.body.status = 'scheduled';
-    req.body.tenantId = req.tenant;
-    const data = await Model.create(req.body);
+    if (body.accessPassword) {
+      body.accessPassword = await bcrypt.hash(body.accessPassword, 10);
+    }
+    autoSlug(ct, body);
+    if (body.scheduledPublishAt) body.status = 'scheduled';
+    body.tenantId = req.tenant;
+    const data = await Model.create(body);
     
     await saveVersion({
       tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
@@ -183,9 +188,24 @@ router.put('/:modelName/:id', async (req, res) => {
     if (validationErrors.length) return res.status(400).json({ error: 'Validation failed', details: validationErrors });
 
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
-    autoSlug(ct, req.body);
-    if (req.body.scheduledPublishAt && !req.body.scheduledUnpublishAt) req.body.status = 'scheduled';
-    const data = await Model.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, req.body, { new: true });
+    const body = {};
+    for (const f of ct.fields) {
+      if (req.body[f.name] !== undefined) {
+        body[f.name] = req.body[f.name];
+      }
+    }
+    for (const key of META_FIELDS) {
+      if (req.body[key] !== undefined) body[key] = req.body[key];
+    }
+    if (body.accessPassword) {
+      body.accessPassword = await bcrypt.hash(body.accessPassword, 10);
+    } else if (body.accessPassword === '') {
+      body.accessPassword = null;
+    }
+    if (req.body.changeDescription) body.changeDescription = req.body.changeDescription;
+    autoSlug(ct, body);
+    if (body.scheduledPublishAt && !body.scheduledUnpublishAt) body.status = 'scheduled';
+    const data = await Model.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, body, { new: true });
     
     await saveVersion({
       tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
@@ -302,6 +322,7 @@ router.patch('/:modelName/:id/publish', async (req, res) => {
       { status: 'published', publishedAt: new Date(), $unset: { scheduledPublishAt: 1 } },
       { new: true }
     );
+    if (!data) return res.status(404).json({ message: 'Entry not found' });
     await saveVersion({
       tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
       entryId: data._id, data: data.toObject(), status: 'published',
@@ -321,121 +342,26 @@ router.patch('/:modelName/:id/unpublish', async (req, res) => {
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenant },
-      { status: 'draft', publishedAt: null, $unset: { scheduledUnpublishAt: 1 } },
+      { status: 'draft', $unset: { publishedAt: 1, scheduledUnpublishAt: 1 } },
       { new: true }
     );
+    if (!data) return res.status(404).json({ message: 'Entry not found' });
+
     await saveVersion({
       tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
       entryId: data._id, data: data.toObject(), status: 'draft',
       userId: req.user?.id, description: 'Unpublished'
     });
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.unpublish', contentType: req.params.modelName, data });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/:modelName/:id/versions', async (req, res) => {
-  try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
-    if (!ct) return res.status(404).json({ message: "Content type not found" });
-    const versions = await ContentVersion.find({ tenantId: req.tenant, entryId: req.params.id })
-      .sort({ version: -1 })
-      .select('-data');
-    res.json({ status: 'success', count: versions.length, data: versions });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/:modelName/:id/versions/diff', async (req, res) => {
-  try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
-    if (!ct) return res.status(404).json({ message: "Content type not found" });
-
-    const { from, to } = req.query;
-    if (!from || !to) return res.status(400).json({ message: "Both 'from' and 'to' version IDs are required" });
-
-    const fromVersion = await ContentVersion.findOne({ _id: from, tenantId: req.tenant, entryId: req.params.id });
-    const toVersion = await ContentVersion.findOne({ _id: to, tenantId: req.tenant, entryId: req.params.id });
-    if (!fromVersion || !toVersion) return res.status(404).json({ message: "Version not found" });
-
-    const fromData = fromVersion.data || {};
-    const toData = toVersion.data || {};
-    const allKeys = new Set([...Object.keys(fromData), ...Object.keys(toData)]);
-    const systemKeys = new Set(['_id', '__v', 'tenantId', 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt']);
-
-    const added = {};
-    const removed = {};
-    const changed = {};
-    const unchanged = {};
-
-    for (const key of allKeys) {
-      if (systemKeys.has(key)) continue;
-      if (!(key in fromData) && (key in toData)) added[key] = { new: toData[key] };
-      else if ((key in fromData) && !(key in toData)) removed[key] = { old: fromData[key] };
-      else if (fromData[key] !== toData[key]) changed[key] = { old: fromData[key], new: toData[key] };
-      else unchanged[key] = toData[key];
-    }
-
-    res.json({
-      status: 'success',
-      diff: { added, removed, changed, unchanged },
-      fromVersion: { version: fromVersion.version, createdAt: fromVersion.createdAt, changeDescription: fromVersion.changeDescription, createdBy: fromVersion.createdBy, status: fromVersion.status },
-      toVersion: { version: toVersion.version, createdAt: toVersion.createdAt, changeDescription: toVersion.changeDescription, createdBy: toVersion.createdBy, status: toVersion.status }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/:modelName/:id/versions/:versionId', async (req, res) => {
-  try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
-    if (!ct) return res.status(404).json({ message: "Content type not found" });
-    const version = await ContentVersion.findOne({ _id: req.params.versionId, tenantId: req.tenant, entryId: req.params.id });
-    if (!version) return res.status(404).json({ message: "Version not found" });
-    res.json({ status: 'success', data: version });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post('/:modelName/:id/rollback/:versionId', async (req, res) => {
-  try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
-    if (!ct) return res.status(404).json({ message: "Content type not found" });
-    const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
-    const version = await ContentVersion.findOne({ _id: req.params.versionId, tenantId: req.tenant, entryId: req.params.id });
-    if (!version) return res.status(404).json({ message: "Version not found" });
-
-    const restoredData = { ...version.data };
-    delete restoredData._id;
-    delete restoredData.__v;
-    delete restoredData.tenantId;
-    delete restoredData.createdAt;
-    delete restoredData.updatedAt;
-
-    const data = await Model.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenant },
-      { ...restoredData },
-      { new: true }
-    );
-
-    await saveVersion({
-      tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
-      entryId: data._id, data: data.toObject(), status: data.status,
-      userId: req.user?.id, description: `Rolled back to version ${version.version}`
-    });
 
     await logAudit({
-      tenantId: req.tenant, userId: req.user?.id, action: 'update',
+      tenantId: req.tenant, userId: req.user?.id, action: 'unpublish',
       entityType: 'entry', entityId: data._id.toString(),
       ipAddress: req.ip, userAgent: req.headers['user-agent']
     });
 
-    res.json({ status: 'success', message: `Rolled back to version ${version.version}`, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.unpublish', contentType: req.params.modelName, data });
+
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -494,8 +420,7 @@ router.patch('/:modelName/bulk', async (req, res) => {
     if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'No IDs provided' });
     if (!updates || typeof updates !== 'object') return res.status(400).json({ error: 'No updates provided' });
 
-    const allowedFields = ct.fields.map(f => f.name);
-    allowedFields.push('status', 'locale');
+    const allowedFields = [...ct.fields.map(f => f.name), ...META_FIELDS];
     const cleanUpdates = {};
     for (const key of Object.keys(updates)) {
       if (allowedFields.includes(key)) cleanUpdates[key] = updates[key];
@@ -576,6 +501,47 @@ router.post('/:modelName/:id/duplicate', async (req, res) => {
   }
 });
 
+router.get('/:modelName/:id/versions', async (req, res) => {
+  try {
+    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    if (!ct) return res.status(404).json({ message: 'Content type not found' });
+    const versions = await ContentVersion.find({ entryId: req.params.id, tenantId: req.tenant })
+      .sort({ version: -1 })
+      .select('version status createdAt createdBy changeDescription')
+      .lean();
+    res.json(versions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:modelName/:id/versions/:versionId', async (req, res) => {
+  try {
+    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    if (!ct) return res.status(404).json({ message: 'Content type not found' });
+    const version = await ContentVersion.findOne({ _id: req.params.versionId, entryId: req.params.id, tenantId: req.tenant });
+    if (!version) return res.status(404).json({ message: 'Version not found' });
+    res.json(version);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:modelName/:id/versions/diff', async (req, res) => {
+  try {
+    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    if (!ct) return res.status(404).json({ message: 'Content type not found' });
+    const versions = await ContentVersion.find({ entryId: req.params.id, tenantId: req.tenant })
+      .sort({ version: -1 })
+      .limit(2)
+      .lean();
+    if (versions.length < 2) return res.json({ left: null, right: null, message: 'Not enough versions for diff' });
+    res.json({ left: versions[1], right: versions[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/:modelName/:id/verify-password', async (req, res) => {
   try {
     const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
@@ -584,8 +550,52 @@ router.post('/:modelName/:id/verify-password', async (req, res) => {
     const entry = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
     if (!entry) return res.status(404).json({ message: 'Entry not found' });
     if (!entry.accessPassword) return res.json({ accessGranted: true });
-    if (req.body.password === entry.accessPassword) return res.json({ accessGranted: true });
+    const isMatch = await bcrypt.compare(req.body.password || '', entry.accessPassword);
+    if (isMatch) return res.json({ accessGranted: true });
     res.status(403).json({ accessGranted: false, message: 'Incorrect password' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:modelName/:id/rollback/:versionId', async (req, res) => {
+  try {
+    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    if (!ct) return res.status(404).json({ message: 'Content type not found' });
+    const version = await ContentVersion.findOne({ _id: req.params.versionId, tenantId: req.tenant, entryId: req.params.id });
+    if (!version) return res.status(404).json({ message: 'Version not found' });
+    const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
+    const entry = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
+    if (!entry) return res.status(404).json({ message: 'Entry not found' });
+
+    const body = {};
+    for (const f of ct.fields) {
+      if (version.data[f.name] !== undefined) body[f.name] = version.data[f.name];
+    }
+    for (const key of META_FIELDS) {
+      if (version.data[key] !== undefined) body[key] = version.data[key];
+    }
+    body.status = version.status || entry.status;
+    const data = await Model.findOneAndUpdate(
+      { _id: req.params.id, tenantId: req.tenant },
+      body,
+      { new: true }
+    );
+    if (!data) return res.status(404).json({ message: 'Entry not found' });
+
+    await saveVersion({
+      tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
+      entryId: data._id, data: data.toObject(), status: data.status,
+      userId: req.user?.id, description: `Rolled back to version ${version.version}`
+    });
+
+    await logAudit({
+      tenantId: req.tenant, userId: req.user?.id, action: 'update',
+      entityType: 'entry', entityId: data._id.toString(),
+      ipAddress: req.ip, userAgent: req.headers['user-agent']
+    });
+
+    res.json({ status: 'success', message: `Rolled back to version ${version.version}`, data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -649,7 +659,13 @@ router.get('/:modelName/export/:format', async (req, res) => {
     if (format === 'csv') {
       const fields = ct.fields.map(f => f.name);
       const header = fields.join(',');
-      const rows = data.map(entry => fields.map(f => `"${(entry[f] || '').toString().replace(/"/g, '""')}"`).join(','));
+      const sanitizeCsv = (val) => {
+        const str = (val || '').toString();
+        const sanitized = str.replace(/"/g, '""');
+        if (/^[=+\-@]/.test(sanitized)) return `"'${sanitized}"`;
+        return `"${sanitized}"`;
+      };
+      const rows = data.map(entry => fields.map(f => sanitizeCsv(entry[f])).join(','));
       const csv = [header, ...rows].join('\n');
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=${req.params.modelName}.csv`);

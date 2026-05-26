@@ -36,7 +36,12 @@ router.put('/:id', async (req, res) => {
     if (!role) return res.status(404).json({ message: 'Role not found' });
     if (role.isSystem) return res.status(403).json({ message: 'Cannot modify system roles' });
 
-    const updated = await Role.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const allowed = ['name', 'slug', 'description', 'permissions'];
+    const body = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) body[key] = req.body[key];
+    }
+    const updated = await Role.findByIdAndUpdate(req.params.id, body, { new: true });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

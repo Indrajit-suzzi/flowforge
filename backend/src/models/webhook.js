@@ -6,7 +6,7 @@ const webhookSchema = new mongoose.Schema({
     url: { type: String, required: true },
     events: [{ type: String, enum: ['content.create', 'content.update', 'content.delete', 'content.publish', 'content.unpublish'] }],
     contentType: { type: String },
-    secret: { type: String },
+    secret: { type: String, select: false },
     isActive: { type: Boolean, default: true },
     conditions: [{
       field: { type: String },
@@ -21,6 +21,7 @@ const webhookSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 webhookSchema.index({ tenantId: 1, isActive: 1 });
+webhookSchema.index({ tenantId: 1, events: 1, isActive: 1 });
 
 const Webhook = mongoose.models.Webhook || mongoose.model('Webhook', webhookSchema);
 

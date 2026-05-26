@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Bell, Shield, Download, Sparkles, Palette, RotateCcw } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 
@@ -30,6 +31,7 @@ function ConfirmDialog({ open, title, message, confirmLabel, confirmClass, onCon
 }
 
 export default function Settings() {
+  const toast = useToast();
   const [notifications, setNotifications] = useState({ email: true, webhook: false });
   const [theme, setTheme] = useState({ primaryColor: '#ff7e5f', accentColor: '#8b5cf6', borderRadius: 12, fontFamily: 'Outfit', logoUrl: '', customCss: '' });
   const [savingTheme, setSavingTheme] = useState(false);
@@ -43,13 +45,18 @@ export default function Settings() {
       const p = r.data.preferences || {};
       if (p.notifications) setNotifications({ email: true, webhook: false, ...p.notifications });
     }).catch(() => {});
-    api.get('/api/v1/theme').then(r => setTheme(r.data || theme)).catch(() => {});
-  }, [theme]);
+    api.get('/api/v1/theme').then(r => {
+      if (r.data) setTheme(prev => ({ ...prev, ...r.data }));
+    }).catch(() => {});
+  }, []);
 
   const savePreferences = async () => {
     setSavingPrefs(true);
     try {
       await api.put('/api/v1/users/me', { preferences: { notifications } });
+      toast.success('Preferences saved');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save preferences');
     } finally {
       setSavingPrefs(false);
     }
@@ -59,6 +66,9 @@ export default function Settings() {
     setSavingTheme(true);
     try {
       await api.put('/api/v1/theme', theme);
+      toast.success('Theme saved');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save theme');
     } finally {
       setSavingTheme(false);
     }
@@ -75,6 +85,9 @@ export default function Settings() {
       a.download = `flowforge-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success('Data exported');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Export failed');
     } finally {
       setExporting(false);
     }
@@ -90,12 +103,19 @@ export default function Settings() {
       a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+      toast.success('Logs downloaded');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to download logs');
+    }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!confirm) return;
-    confirm.action();
+    try {
+      await confirm.action();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || `${confirm.title || 'Action'} failed`);
+    }
     setConfirm(null);
   };
 
@@ -222,7 +242,7 @@ export default function Settings() {
           <button onClick={downloadLogs} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
             <FileText style={{ width: '14px', height: '14px' }} /> Download Logs
           </button>
-          <button onClick={() => api.get('/api/v1/stats/seed').catch(() => {})} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
+          <button onClick={() => setConfirm({ title: 'Re-seed Demo Data', message: 'This will re-seed the demo data. Existing data may be overwritten or duplicated. Continue?', label: 'Seed', action: async () => { await api.post('/api/v1/stats/seed'); toast.success('Demo data re-seeded'); } })} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
             <RotateCcw style={{ width: '14px', height: '14px' }} /> Re-seed Demo Data
           </button>
         </div>
@@ -250,14 +270,14 @@ export default function Settings() {
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Revoke All API Keys</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Invalidate all active API keys immediately</p>
             </div>
-            <button onClick={() => setConfirm({ title: 'Revoke All API Keys', message: 'This will invalidate all active API keys. Any services using these keys will lose access immediately.', label: 'Revoke', action: async () => { await api.post('/api/v1/users/me/revoke-keys'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Revoke</button>
+            <button onClick={() => setConfirm({ title: 'Revoke All API Keys', message: 'This will invalidate all active API keys. Any services using these keys will lose access immediately.', label: 'Revoke', action: async () => { await api.post('/api/v1/users/me/revoke-keys'); toast.success('All API keys revoked'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Revoke</button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(8, 5, 17, 0.4)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.08)', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <p style={{ fontSize: '14px', fontWeight: '500', color: '#f8fafc' }}>Reset Scheduler</p>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Clear all scheduled publish/unpublish jobs</p>
             </div>
-            <button onClick={() => setConfirm({ title: 'Reset Scheduler', message: 'This will clear all scheduled publish and unpublish jobs. Entries will remain in their current state.', label: 'Reset', action: async () => { await api.post('/api/v1/calendar/clear'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Clear</button>
+            <button onClick={() => setConfirm({ title: 'Reset Scheduler', message: 'This will clear all scheduled publish and unpublish jobs. Entries will remain in their current state.', label: 'Reset', action: async () => { await api.post('/api/v1/calendar/clear'); toast.success('Scheduler reset'); } })} className="btn-danger" style={{ padding: '8px 18px', fontSize: '12px' }}>Clear</button>
           </div>
         </div>
       </div>

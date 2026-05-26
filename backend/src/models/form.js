@@ -21,7 +21,7 @@ const formSchema = new mongoose.Schema({
   submissionCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
-formSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
+formSchema.index({ slug: 1 }, { unique: true });
 
 const Form = mongoose.models.Form || mongoose.model('Form', formSchema);
 export default Form;

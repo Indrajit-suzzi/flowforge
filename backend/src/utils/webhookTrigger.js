@@ -3,14 +3,35 @@ import WebhookLog from '../models/webhookLog.js';
 import crypto from 'crypto';
 import logger from './logger.js';
 
+const isPrivateIP = (urlStr) => {
+  try {
+    const url = new URL(urlStr);
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '[::1]') return true;
+    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return true;
+    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return true;
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) return true;
+    return false;
+  } catch {
+    return true;
+  }
+};
+
 const deliver = async ({ webhook, event, contentType, payload, attempt = 1, retryOf = null }) => {
   const start = Date.now();
   const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
+  let error = null;
+
+  if (isPrivateIP(webhook.url)) {
+    error = 'Blocked: webhook URL points to a private or internal address';
+    logger.warn({ url: webhook.url, webhookId: webhook._id }, error);
+    await WebhookLog.create({ tenantId: webhook.tenantId, webhookId: webhook._id, webhookName: webhook.name, webhookUrl: webhook.url, event, contentType, status: 'failed', error, payload: payload.substring(0, 5000), attempt, retryOf });
+    return;
+  }
 
   let status = 'failed';
   let responseCode = null;
   let responseBody = null;
-  let error = null;
 
   try {
     const response = await fetch(webhook.url, {
@@ -93,7 +114,7 @@ export const triggerWebhooks = async ({ tenantId, event, contentType, data }) =>
       isActive: true,
       events: event,
       $or: [{ contentType: null }, { contentType: '' }, { contentType }]
-    });
+    }).select('+secret');
 
     for (const webhook of webhooks) {
       if (!evaluateConditions(webhook.conditions, data)) continue;
@@ -107,6 +128,9 @@ export const triggerWebhooks = async ({ tenantId, event, contentType, data }) =>
 
 const sendPayload = async ({ webhook, event, payload }) => {
   const start = Date.now();
+  if (isPrivateIP(webhook.url)) {
+    return { status: 'failed', error: 'Blocked: webhook URL points to a private or internal address', duration: Date.now() - start };
+  }
   const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
   let status = 'failed', responseCode = null, responseBody = null, error = null;
   try {
@@ -145,7 +169,7 @@ export const retryWebhook = async ({ tenantId, logId }) => {
   if (!log) throw new Error('Log not found');
   if (log.status === 'success') throw new Error('Cannot retry a successful delivery');
 
-  const webhook = await Webhook.findOne({ _id: log.webhookId, tenantId });
+  const webhook = await Webhook.findOne({ _id: log.webhookId, tenantId }).select('+secret');
   if (!webhook) throw new Error('Webhook not found');
   if (!webhook.isActive) throw new Error('Webhook is inactive');
 

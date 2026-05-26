@@ -33,10 +33,14 @@ const server = app.listen(PORT, () => {
 const shutdown = async (signal) => {
   logger.info({ signal }, 'Shutdown signal received');
   stopScheduler();
-  server.close(async () => {
-    await mongoose.connection.close();
-    logger.info('Server shut down gracefully');
-    process.exit(0);
+  server.close(() => {
+    mongoose.connection.close().then(() => {
+      logger.info('Server shut down gracefully');
+      process.exit(0);
+    }).catch((err) => {
+      logger.error({ err }, 'Error closing MongoDB connection');
+      process.exit(1);
+    });
   });
   setTimeout(() => {
     logger.error('Forced shutdown after timeout');

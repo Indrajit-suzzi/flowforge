@@ -23,7 +23,9 @@ export const validateField = (field, value) => {
         if (!regex.test(str)) {
           errors.push(field.patternMessage || `"${field.label || field.name}" does not match required pattern`);
         }
-      } catch {}
+      } catch {
+        errors.push(`"${field.label || field.name}" has an invalid validation pattern`);
+      }
     }
   }
 

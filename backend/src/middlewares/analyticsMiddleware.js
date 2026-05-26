@@ -1,4 +1,5 @@
 import Analytics from '../models/analytics.js';
+import logger from '../utils/logger.js';
 
 const analyticsMiddleware = async (req, res, next) => {
     const start = Date.now();
@@ -16,7 +17,7 @@ const analyticsMiddleware = async (req, res, next) => {
             responseTime,
             userAgent: req.headers['user-agent'],
             ip: req.ip || req.connection.remoteAddress
-        }).catch(() => {});
+        }).catch(err => logger.error({ err }, 'Analytics create failed'));
         
         return originalJson(body);
     };

@@ -5,9 +5,14 @@ const api = axios.create({
 });
 
 let authTokenGetter = null;
+let navigationHandler = null;
 
 export function setAuthTokenGetter(getter) {
   authTokenGetter = getter;
+}
+
+export function setNavigationHandler(handler) {
+  navigationHandler = handler;
 }
 
 async function getAuthToken() {
@@ -26,9 +31,13 @@ async function getAuthToken() {
 }
 
 api.interceptors.request.use(async (config) => {
-  const token = await getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  try {
+    const token = await getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Token retrieval is best-effort
   }
 
   return config;
@@ -37,10 +46,12 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const isSignedInWithClerk = Boolean(authTokenGetter || window.Clerk?.session);
-
-    if (err.response?.status === 401 && !isSignedInWithClerk && window.location.pathname !== '/sign-in') {
-      window.location.href = '/sign-in';
+    if (err.response?.status === 401) {
+      if (navigationHandler) {
+        navigationHandler('/sign-in');
+      } else if (!window.location.pathname.includes('/sign-in')) {
+        window.location.href = '/sign-in';
+      }
     }
     return Promise.reject(err);
   }

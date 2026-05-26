@@ -6,14 +6,20 @@ import { logAudit } from '../utils/auditLogger.js';
 export const create = async (req, res) => {
   try {
     const { name, scopes, rateLimit } = req.body;
+    const hasWildcard = scopes?.some(s => s.contentType === '*');
+    if (hasWildcard && req.userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can create API keys with wildcard scope' });
+    }
     const rawKey = `flow_${crypto.randomBytes(32).toString('hex')}`;
     const hashedKey = await bcrypt.hash(rawKey, 10);
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
     const keyPreview = rawKey.slice(0, 12) + '...';
 
     const apiKey = await ApiKey.create({
       tenantId: req.tenant,
       name,
       key: hashedKey,
+      keyHash,
       keyPreview,
       scopes: scopes || [],
       rateLimit: rateLimit || { maxRequests: 100, windowMs: 60000 },
@@ -64,13 +70,14 @@ export const getAll = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const key = await ApiKey.findOneAndDelete({ _id: req.params.id, tenantId: req.tenant });
+    if (!key) return res.status(404).json({ message: "API key not found" });
     await logAudit({
       tenantId: req.tenant,
       userId: req.user?.id,
       action: 'delete_key',
       entityType: 'apiKey',
-      entityId: key?._id.toString(),
-      entityName: key?.name,
+      entityId: key._id.toString(),
+      entityName: key.name,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent']
     });

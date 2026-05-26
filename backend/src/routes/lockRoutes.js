@@ -1,12 +1,14 @@
 import express from 'express';
 import EntryLock from '../models/entryLock.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import tenantMiddleware from '../middlewares/tenantMiddleware.js';
 
 const router = express.Router();
 
 const LOCK_DURATION_MS = 15 * 60 * 1000;
 
 // GET /api/v1/locks/:slug/:id - Check lock status
-router.get('/:slug/:id', async (req, res) => {
+router.get('/:slug/:id', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
     const lock = await EntryLock.findOne({ entryId: req.params.id, tenantId: req.tenant });
     if (!lock || lock.expiresAt < new Date()) {
@@ -20,10 +22,10 @@ router.get('/:slug/:id', async (req, res) => {
 });
 
 // POST /api/v1/locks/:slug/:id/acquire - Acquire a lock
-router.post('/:slug/:id/acquire', async (req, res) => {
+router.post('/:slug/:id/acquire', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
-    const { userId, userName } = req.body;
-    if (!userId) return res.status(400).json({ message: 'userId is required' });
+    const userId = req.user.id;
+    const userName = req.body.userName || 'Unknown';
 
     // Clean expired locks
     await EntryLock.deleteMany({ expiresAt: { $lt: new Date() } });
@@ -64,9 +66,9 @@ router.post('/:slug/:id/acquire', async (req, res) => {
 });
 
 // DELETE /api/v1/locks/:slug/:id/release — Release a lock
-router.delete('/:slug/:id/release', async (req, res) => {
+router.delete('/:slug/:id/release', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
-    await EntryLock.deleteOne({ entryId: req.params.id, tenantId: req.tenant, userId: req.body.userId || req.query.userId });
+    await EntryLock.deleteOne({ entryId: req.params.id, tenantId: req.tenant, userId: req.user.id });
     res.json({ released: true });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -74,9 +76,9 @@ router.delete('/:slug/:id/release', async (req, res) => {
 });
 
 // POST /api/v1/locks/:slug/:id/heartbeat — Extend lock
-router.post('/:slug/:id/heartbeat', async (req, res) => {
+router.post('/:slug/:id/heartbeat', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
-    const lock = await EntryLock.findOne({ entryId: req.params.id, tenantId: req.tenant, userId: req.body.userId });
+    const lock = await EntryLock.findOne({ entryId: req.params.id, tenantId: req.tenant, userId: req.user.id });
     if (!lock) return res.status(404).json({ message: 'Lock not found' });
     lock.expiresAt = new Date(Date.now() + LOCK_DURATION_MS);
     lock.lockedAt = new Date();

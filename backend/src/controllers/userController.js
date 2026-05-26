@@ -8,7 +8,10 @@ export const getAllUsers = async (req, res) => {
         const skip = (page - 1) * limit;
         const filter = {};
         if (req.query.role) filter.role = req.query.role;
-        if (req.query.search) filter.$or = [{ username: { $regex: req.query.search, $options: 'i' } }, { email: { $regex: req.query.search, $options: 'i' } }];
+        if (req.query.search) {
+          const searchEscaped = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 100);
+          filter.$or = [{ username: { $regex: searchEscaped, $options: 'i' } }, { email: { $regex: searchEscaped, $options: 'i' } }];
+        }
         const [users, total] = await Promise.all([
             User.find(filter, { password: 0 }).sort({ createdAt: -1 }).skip(skip).limit(limit),
             User.countDocuments(filter)
@@ -102,7 +105,15 @@ export const updateMe = async (req, res) => {
 
 export const deleteMe = async (req, res) => {
     try {
-        await User.findByIdAndDelete(req.user.id);
+        if (req.user?.clerkUserId) {
+            const { createClerkClient } = await import('@clerk/backend');
+            const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+            await client.users.deleteUser(req.user.clerkUserId);
+        }
+
+        const result = await User.deleteOne({ _id: req.user.id });
+        if (result.deletedCount === 0) return res.status(404).json({ message: "User not found" });
+
         res.json({ message: "Account deleted" });
     } catch (err) {
         res.status(500).json({ error: err.message });

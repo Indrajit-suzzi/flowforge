@@ -171,10 +171,13 @@ export default function Webhooks() {
     setSaving(true);
     try {
       await api.post('/api/v1/webhooks', form);
-      setForm({ name: '', url: '', events: [], contentType: '' });
+      toast.success('Webhook created');
+      setForm({ name: '', url: '', events: [], contentType: '', maxRetries: 3, retryDelayMs: 5000, conditions: [] });
       setShowForm(false);
       const r = await api.get('/api/v1/webhooks');
       setWebhooks(r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save webhook');
     } finally {
       setSaving(false);
     }
@@ -182,8 +185,13 @@ export default function Webhooks() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this webhook?')) return;
-    await api.delete(`/api/v1/webhooks/${id}`);
-    setWebhooks(webhooks.filter(w => w._id !== id));
+    try {
+      await api.delete(`/api/v1/webhooks/${id}`);
+      toast.success('Webhook deleted');
+      setWebhooks(webhooks.filter(w => w._id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete webhook');
+    }
   };
 
   const toggleEvent = (event) => {
@@ -307,7 +315,7 @@ export default function Webhooks() {
                   <p style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', marginTop: '6px' }}>{w.url}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
-                  <button onClick={async () => { setTesting(w._id); try { const r = await api.post(`/api/v1/webhooks/${w._id}/test`); setTestResult({ webhookName: w.name, ...r.data.test }); } catch { setTestResult({ webhookName: w.name, status: 'failed', error: 'Request failed' }); } finally { setTesting(null); } }} className="btn-ghost" style={{ padding: '8px' }} title="Test webhook" disabled={testing === w._id}>
+                  <button onClick={async () => { setTesting(w._id); try { const r = await api.post(`/api/v1/webhooks/${w._id}/test`); setTestResult({ webhookName: w.name, ...r.data.test }); toast.success('Test sent'); } catch (err) { setTestResult({ webhookName: w.name, status: 'failed', error: err.response?.data?.error || 'Request failed' }); toast.error(err.response?.data?.error || 'Test failed'); } finally { setTesting(null); } }} className="btn-ghost" style={{ padding: '8px' }} title="Test webhook" disabled={testing === w._id}>
                     <Play style={{ width: '14px', height: '14px', color: testing === w._id ? '#f59e0b' : '#94a3b8' }} />
                   </button>
                   <button onClick={async () => { setRotating(w._id); try { const r = await api.post(`/api/v1/webhooks/${w._id}/rotate-secret`); setRotateResult({ webhookName: w.name, secret: r.data.secret }); setWebhooks(webhooks.map(x => x._id === w._id ? { ...x, secretLastRotated: r.data.secretLastRotated } : x)); } catch (err) { toast.error(err.response?.data?.error || 'Rotation failed'); } finally { setRotating(null); } }} className="btn-ghost" style={{ padding: '8px' }} title="Rotate secret" disabled={rotating === w._id}>
@@ -409,7 +417,7 @@ export default function Webhooks() {
             <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>New signing secret — copy it now. You won't see it again.</p>
             <div style={{ display: 'flex', gap: '8px' }}>
               <code style={{ flex: 1, padding: '10px', background: 'rgba(8,5,17,0.6)', borderRadius: '8px', fontSize: '12px', color: '#f59e0b', fontFamily: 'monospace', wordBreak: 'break-all' }}>{rotateResult.secret}</code>
-              <button onClick={() => { navigator.clipboard.writeText(rotateResult.secret); setRotateResult(null); }} className="btn-primary" style={{ padding: '10px 16px', border: 'none', fontSize: '12px' }}>Copy</button>
+              <button onClick={() => { navigator.clipboard.writeText(rotateResult.secret).catch(() => toast.error('Failed to copy secret')); setRotateResult(null); }} className="btn-primary" style={{ padding: '10px 16px', border: 'none', fontSize: '12px' }}>Copy</button>
             </div>
           </div>
         </div>

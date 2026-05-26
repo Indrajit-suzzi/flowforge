@@ -65,7 +65,8 @@ export function useEntryLock(slug, entryId, userId, userName) {
     return () => {
       stopHeartbeat();
       if (slug && entryId && userId) {
-        api.delete(`/api/v1/locks/${slug}/${entryId}/release`, { data: { userId } }).catch(() => {});
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        navigator.sendBeacon(`${baseUrl}/api/v1/locks/${slug}/${entryId}/release?userId=${encodeURIComponent(userId)}`, '');
       }
     };
   }, [slug, entryId, userId]);

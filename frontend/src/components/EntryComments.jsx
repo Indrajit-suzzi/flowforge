@@ -12,8 +12,6 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
   const { user } = useUser();
-  const userId = user?.id;
-  const userName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Unknown';
 
   useEffect(() => {
     (async () => {
@@ -32,8 +30,6 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
       await api.post(`/api/v1/comments/${slug}/${entryId}`, {
         body: newBody.trim(),
         parentCommentId: replyTo?._id || null,
-        userId,
-        userName
       });
       setNewBody('');
       setReplyTo(null);
@@ -97,14 +93,14 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {topLevel.map(comment => (
+                  {topLevel.map(comment => (
                 <CommentCard
                   key={comment._id}
                   comment={comment}
                   replies={replies(comment._id)}
                   replyTo={replyTo}
                   setReplyTo={setReplyTo}
-                  userId={userId}
+                  userId={user?.id}
                   onDelete={handleDelete}
                   formatTime={formatTime}
                   slug={slug}

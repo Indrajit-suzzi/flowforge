@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, GripVertical, Eye, List, FileText, ArrowLeft } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
@@ -7,6 +8,7 @@ import PageShell from '../components/PageShell';
 const fieldTypes = ['text', 'textarea', 'email', 'number', 'select', 'checkbox', 'radio'];
 
 export default function Forms() {
+  const toast = useToast();
   const [forms, setForms] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -33,11 +35,14 @@ export default function Forms() {
       } else {
         await api.post('/api/v1/forms', payload);
       }
+      toast.success('Form saved');
       setForm({ name: '', slug: '', description: '', fields: [], submitButtonText: 'Submit', successMessage: 'Thank you!', notificationEmail: '' });
       setShowForm(false);
       setEditingId(null);
       const r = await api.get('/api/v1/forms');
       setForms(r.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save form');
     } finally {
       setSaving(false);
     }
@@ -64,14 +69,23 @@ export default function Forms() {
   };
 
   const loadSubmissions = async (formId) => {
-    const r = await api.get(`/api/v1/forms/${formId}/submissions`);
-    setSubmissions(r.data.data || []);
+    try {
+      const r = await api.get(`/api/v1/forms/${formId}/submissions`);
+      setSubmissions(r.data.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to load submissions');
+    }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this form and all submissions?')) return;
-    await api.delete(`/api/v1/forms/${id}`);
-    setForms(forms.filter(f => f._id !== id));
+    try {
+      await api.delete(`/api/v1/forms/${id}`);
+      toast.success('Form deleted');
+      setForms(forms.filter(f => f._id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete form');
+    }
   };
 
   return (

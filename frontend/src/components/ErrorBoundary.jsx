@@ -3,54 +3,36 @@ import { Component } from 'react';
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error) {
-    return { error };
+    return { error, retryCount: 0 };
   }
 
-  componentDidCatch(error, info) {
-    console.error('ErrorBoundary caught:', error, info);
-  }
+  handleRetry = () => {
+    const nextCount = this.state.retryCount + 1;
+    if (nextCount >= 3) {
+      window.location.reload();
+      return;
+    }
+    this.setState({ error: null, retryCount: nextCount });
+  };
 
   render() {
     if (this.state.error) {
-      if (this.props.fallback) {
-        return this.props.fallback(this.state.error);
-      }
-
       return (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          minHeight: '60vh', padding: '48px 24px', textAlign: 'center',
-          background: '#080511', color: '#f8fafc',
-        }}>
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '16px',
-            background: 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05))',
-            border: '1px solid rgba(239,68,68,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '28px', marginBottom: '24px',
-          }}>!</div>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', fontFamily: "'Outfit', sans-serif" }}>
-            Something went wrong
-          </h2>
-          <p style={{ color: '#94a3b8', marginBottom: '24px', maxWidth: '400px', lineHeight: '1.6' }}>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <h3 style={{ color: '#fca5a5', marginBottom: '12px' }}>Something went wrong</h3>
+          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
             {this.state.error?.message || 'An unexpected error occurred'}
           </p>
-          <button onClick={() => this.setState({ error: null })} aria-label="Retry loading the page" style={{
-            padding: '10px 24px', borderRadius: '12px', border: 'none',
-            background: 'linear-gradient(135deg, #ff7e5f, #feb47b)',
-            color: '#080511', fontWeight: '600', cursor: 'pointer',
-            fontFamily: "'Outfit', sans-serif", fontSize: '14px',
-          }}>
-            Try again
+          <button onClick={this.handleRetry} className="btn-primary" style={{ border: 'none' }}>
+            {this.state.retryCount < 2 ? 'Try again' : 'Reload page'}
           </button>
         </div>
       );
     }
-
     return this.props.children;
   }
 }

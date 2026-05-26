@@ -9,6 +9,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
+import DOMPurify from 'dompurify';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   Heading1, Heading2, Heading3,
@@ -138,7 +139,11 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Underline,
-      Link.configure({ openOnClick: false }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        validate: (href) => !href.startsWith('javascript:'),
+      }),
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder: placeholder || 'Start typing...' }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -146,7 +151,9 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML());
+      const raw = editor.getHTML();
+      const clean = DOMPurify.sanitize(raw, { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'a', 'img', 'hr'], ALLOWED_ATTR: ['href', 'src', 'alt', 'target', 'rel', 'class', 'style', 'data-placeholder'], ALLOW_DATA_ATTR: false });
+      onChange?.(clean);
     },
     editorProps: {
       attributes: {
@@ -175,7 +182,7 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
           <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} style={btnStyle(editor.isActive('italic'))}><Italic style={{ width: '12px', height: '12px' }} /></button>
           <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} style={btnStyle(editor.isActive('underline'))}><UnderlineIcon style={{ width: '12px', height: '12px' }} /></button>
           <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} style={btnStyle(editor.isActive('strike'))}><Strikethrough style={{ width: '12px', height: '12px' }} /></button>
-          <button type="button" onClick={() => { const url = editor.getAttributes('link').href; if (url) { editor.chain().focus().unsetLink().run(); } else { const link = prompt('URL:'); if (link) editor.chain().focus().setLink({ href: link }).run(); } }} style={btnStyle(editor.isActive('link'))}><LinkIcon style={{ width: '12px', height: '12px' }} /></button>
+          <button type="button" onClick={() => { const url = editor.getAttributes('link').href; if (url) { editor.chain().focus().unsetLink().run(); } else { const link = window.prompt('Enter URL:'); if (link && !link.startsWith('javascript:')) editor.chain().focus().setLink({ href: link }).run(); } }} style={btnStyle(editor.isActive('link'))}><LinkIcon style={{ width: '12px', height: '12px' }} /></button>
           <button type="button" onClick={() => editor.chain().focus().toggleCode().run()} style={btnStyle(editor.isActive('code'))}><Code style={{ width: '12px', height: '12px' }} /></button>
         </BubbleMenu>
       )}

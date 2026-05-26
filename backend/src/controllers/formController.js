@@ -5,6 +5,8 @@ import { logAudit } from '../utils/auditLogger.js';
 export const create = async (req, res) => {
   try {
     const { name, slug, description, fields, submitButtonText, successMessage, notificationEmail } = req.body;
+    const existing = await Form.findOne({ slug });
+    if (existing) return res.status(409).json({ error: `A form with slug "${slug}" already exists` });
     const form = await Form.create({
       tenantId: req.tenant, name, slug, description,
       fields: (fields || []).map((f, i) => ({ ...f, order: i })),
@@ -38,8 +40,13 @@ export const getOne = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const { fields, ...rest } = req.body;
+    const { fields, slug, ...rest } = req.body;
     const updates = { ...rest };
+    if (slug) {
+      const existing = await Form.findOne({ slug, _id: { $ne: req.params.id } });
+      if (existing) return res.status(409).json({ error: `A form with slug "${slug}" already exists` });
+      updates.slug = slug;
+    }
     if (fields) updates.fields = fields.map((f, i) => ({ ...f, order: i }));
     const form = await Form.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenant },
@@ -67,9 +74,7 @@ export const remove = async (req, res) => {
 
 export const submit = async (req, res) => {
   try {
-    const tenantId = req.tenant || req.headers['x-tenant-id'];
-    if (!tenantId) return res.status(400).json({ error: 'Tenant ID required via X-Tenant-Id header' });
-    const form = await Form.findOne({ slug: req.params.slug, tenantId, isActive: true });
+    const form = await Form.findOne({ slug: req.params.slug, isActive: true });
     if (!form) return res.status(404).json({ message: 'Form not found or inactive' });
     const data = {};
     for (const field of form.fields) {
@@ -78,7 +83,7 @@ export const submit = async (req, res) => {
       if (val) data[field.name] = String(val);
     }
     await FormSubmission.create({
-      tenantId, formId: form._id, formSlug: form.slug,
+      tenantId: form.tenantId, formId: form._id, formSlug: form.slug,
       data, ipAddress: req.ip, userAgent: req.headers['user-agent']
     });
     await Form.findByIdAndUpdate(form._id, { $inc: { submissionCount: 1 } });

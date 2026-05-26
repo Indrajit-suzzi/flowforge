@@ -15,8 +15,6 @@ import './Landing.css';
 function InteractiveOrb() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
-  const [hovered, setHovered] = useState(false);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -76,15 +74,9 @@ function InteractiveOrb() {
     const handleMouseLeave = () => {
       mouseRef.current.targetX = 0;
       mouseRef.current.targetY = 0;
-      setHovered(false);
-    };
-
-    const handleMouseEnter = () => {
-      setHovered(true);
     };
 
     canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseenter', handleMouseEnter);
     canvas.addEventListener('mouseleave', handleMouseLeave);
 
     const render = () => {
@@ -212,10 +204,9 @@ function InteractiveOrb() {
     return () => {
       cancelAnimationFrame(animationFrameId);
       canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseenter', handleMouseEnter);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [hovered]);
+  }, []);
 
   return (
     <div className="interactive-orb">

@@ -1,15 +1,16 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS production
 
 WORKDIR /app
+
+RUN apk add --no-cache curl
 
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-FROM base AS production
+COPY src/ ./src/
+COPY server.js ./
 
-RUN apk add --no-cache curl
-
-COPY . .
+RUN mkdir -p uploads && chown -R node:node /app
 
 EXPOSE 3000
 

@@ -1,9 +1,20 @@
 import { logAudit } from '../utils/auditLogger.js';
 
+const SYSTEM_FIELDS = new Set(['tenantId', 'status', 'publishedAt', 'scheduledPublishAt', 'scheduledUnpublishAt', 'locale', 'translations', 'isDeleted', 'deletedAt', 'accessPassword', 'notes', 'tags', 'workflowStage', 'passwordProtected', '_id', '__v', 'createdAt', 'updatedAt']);
+
+const stripSystemFields = (body) => {
+  const clean = {};
+  for (const key of Object.keys(body)) {
+    if (!SYSTEM_FIELDS.has(key)) clean[key] = body[key];
+  }
+  return clean;
+};
+
 export const create = (Model) => async (req, res) => {
   try {
-    req.body.tenantId = req.tenant;
-    const data = await Model.create(req.body);
+    const body = stripSystemFields(req.body);
+    body.tenantId = req.tenant;
+    const data = await Model.create(body);
     
     await logAudit({
       tenantId: req.tenant,
@@ -43,7 +54,8 @@ export const getOne = (Model) => async (req, res) => {
 export const update = (Model) => async (req, res) => {
   try {
     const oldData = await Model.findOne({ _id: req.params.id, tenantId: req.tenant });
-    const data = await Model.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, req.body, {
+    const body = stripSystemFields(req.body);
+    const data = await Model.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, body, {
       new: true,
     });
     

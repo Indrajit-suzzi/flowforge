@@ -4,6 +4,7 @@ const apiKeySchema = new mongoose.Schema({
     tenantId: { type: String, required: true },
     name: { type: String, required: true },
     key: { type: String, required: true, unique: true },
+    keyHash: { type: String, default: '' },
     keyPreview: { type: String, required: true },
     scopes: [{
         contentType: { type: String, required: true },
@@ -17,6 +18,7 @@ const apiKeySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 apiKeySchema.index({ tenantId: 1 });
+apiKeySchema.index({ keyHash: 1 });
 
 const ApiKey = mongoose.models.ApiKey || mongoose.model('ApiKey', apiKeySchema);
 
