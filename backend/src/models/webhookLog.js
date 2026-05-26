@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const webhookLogSchema = new mongoose.Schema({
-  tenantId: { type: String, required: true, index: true },
-  webhookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Webhook', required: true, index: true },
+  tenantId: { type: String, required: true },
+  webhookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Webhook', required: true },
   webhookName: { type: String },
   webhookUrl: { type: String },
   event: { type: String, required: true },
@@ -20,4 +20,5 @@ const webhookLogSchema = new mongoose.Schema({
 webhookLogSchema.index({ tenantId: 1, webhookId: 1, createdAt: -1 });
 webhookLogSchema.index({ tenantId: 1, event: 1 });
 
-export default mongoose.model('WebhookLog', webhookLogSchema);
+const WebhookLog = mongoose.models.WebhookLog || mongoose.model('WebhookLog', webhookLogSchema);
+export default WebhookLog;

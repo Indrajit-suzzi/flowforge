@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    clerkId: {
+      type: String,
+      index: true,
+      sparse: true,
+    },
     username: {
       type: String,
       required: true,
@@ -14,6 +19,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      select: false,
     },
     role: {
       type: String,
