@@ -29,16 +29,35 @@
   opacity: 0.6;
 }
 
+@keyframes blobPulse {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.05) translate(20px, 10px); }
+  100% { transform: scale(0.95) translate(-10px, 20px); }
+}
+
 .auth-blob-peach {
   background: radial-gradient(circle, rgba(255, 126, 95, 0.15) 0%, transparent 70%);
   top: -150px;
   left: -150px;
+  animation: blobPulse 15s infinite alternate ease-in-out;
 }
 
 .auth-blob-purple {
   background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
   bottom: -150px;
   right: -150px;
+  animation: blobPulse 18s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes authFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-card {
@@ -54,6 +73,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: authFadeInUp 0.6s ease-out forwards;
 }
 
 .auth-card h1 {
@@ -92,6 +112,16 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.github-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+}
+
+.github-btn:active {
+  transform: scale(0.98);
 }
 
 .auth-divider {
