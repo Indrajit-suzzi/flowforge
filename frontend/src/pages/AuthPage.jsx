@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Code } from 'lucide-react';
 import { useLocalAuth } from '../contexts/useLocalAuth';
 import './AuthPage.css';
 
 export default function AuthPage() {
-  const location = useLocation();
-  const isSignUp = location.pathname.includes('sign-up');
   const buttonRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,7 +45,6 @@ export default function AuthPage() {
         size: 'large',
         type: 'standard',
         shape: 'rectangular',
-        text: isSignUp ? 'signup_with' : 'signin_with',
         width: 320,
       });
     };
@@ -64,7 +61,7 @@ export default function AuthPage() {
       script.onerror = () => setError('Could not load Google sign-in.');
       document.head.appendChild(script);
     }
-  }, [googleClientId, googleLogin, isSignUp, navigate, user]);
+  }, [googleClientId, googleLogin, navigate, user]);
 
   const startGithubLogin = () => {
     window.location.href = `${apiBaseUrl}/api/v1/auth/github`;
@@ -77,11 +74,9 @@ export default function AuthPage() {
       <div className="auth-blob auth-blob-purple" />
       
       <div className="auth-card">
-        <h1>{isSignUp ? 'Create your account' : 'Welcome back'}</h1>
+        <h1>Sign in to FlowForge</h1>
         <p className="auth-subtitle">
-          {isSignUp 
-            ? 'Join FlowForge and start building your first workflow.' 
-            : 'Access your automated workflows and creative tools with one click.'}
+          Use your Google or GitHub account to get started. New accounts are created automatically.
         </p>
         
         {displayedError && <div className="auth-error">{displayedError}</div>}
@@ -96,13 +91,6 @@ export default function AuthPage() {
           <Code size={18} />
           Continue with GitHub
         </button>
-        
-        <div className="auth-footer">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-          <button onClick={() => navigate(isSignUp ? '/sign-in' : '/sign-up')}>
-            {isSignUp ? 'Sign in' : 'Get started'}
-          </button>
-        </div>
       </div>
     </div>
   );

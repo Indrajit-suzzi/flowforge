@@ -107,10 +107,8 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
-        <Route path="/sign-in/*" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
+        <Route path="/sign-in" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
         <Route path="/auth/callback" element={<ErrorBoundary><OAuthCallback /></ErrorBoundary>} />
-        <Route path="/sign-up/*" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
-        <Route path="/local-login" element={<Navigate to="/sign-in" replace />} />
         <Route path="/dashboard" element={<ProtectedLayout><PageBoundary><Dashboard /></PageBoundary></ProtectedLayout>} />
         <Route path="/content-types" element={<ProtectedLayout><PageBoundary><ContentTypes /></PageBoundary></ProtectedLayout>} />
         <Route path="/content/:slug" element={<ProtectedLayout><PageBoundary><ContentEntries /></PageBoundary></ProtectedLayout>} />
