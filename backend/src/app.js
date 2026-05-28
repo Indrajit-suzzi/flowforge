@@ -63,6 +63,8 @@ app.use((req, _res, next) => {
 app.use(sanitize);
 app.use(requestLogger);
 
+app.get('/favicon.ico', (_req, res) => res.redirect('/favicon.svg'));
+
 if (process.env.TRUST_PROXY) {
   app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
 }
