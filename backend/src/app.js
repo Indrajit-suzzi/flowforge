@@ -46,7 +46,7 @@ const corsOrigins = process.env.CORS_ORIGINS;
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
 app.use(cors({
-  origin: corsOrigins ? corsOrigins.split(',').map(s => s.trim()) : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: corsOrigins ? corsOrigins.split(',').map(s => s.trim()) : ['http://localhost:5173', 'http://localhost:3000', 'https://flowforge-drab.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tenant-Id'],
   credentials: true,
