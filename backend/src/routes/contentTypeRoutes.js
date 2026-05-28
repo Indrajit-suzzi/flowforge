@@ -6,6 +6,7 @@ import EntryComment from '../models/entryComment.js';
 import EntryLock from '../models/entryLock.js';
 import { contentTemplates } from '../utils/contentTemplates.js';
 import { logAudit } from '../utils/auditLogger.js';
+import { invalidateContentType, invalidateAll } from '../utils/contentTypeCache.js';
 import validate from '../middlewares/validateMiddleware.js';
 import { createContentTypeSchema, updateContentTypeSchema } from '../utils/validationSchemas.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
@@ -14,7 +15,7 @@ import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
-const CONTENT_TYPE_ALLOWED = ['name', 'slug', 'fields', 'locales', 'description', 'cacheTTL'];
+const CONTENT_TYPE_ALLOWED = ['name', 'slug', 'fields', 'locales', 'description', 'cacheTTL', 'workflowEnabled', 'workflowStages'];
 
 // Protected endpoints
 router.post('/', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'), validate(createContentTypeSchema), async (req, res) => {
@@ -26,6 +27,7 @@ router.post('/', authMiddleware, tenantMiddleware, roleMiddleware('contentTypes'
         body.tenantId = req.tenant;
         if (!body.locales || body.locales.length === 0) body.locales = ['en'];
         const ct = await ContentType.create(body);
+        invalidateAll(req.tenant);
         await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
         res.status(201).json(ct);
     } catch (err) {
@@ -56,6 +58,7 @@ router.post('/from-template', authMiddleware, tenantMiddleware, roleMiddleware('
             locales: ['en']
         });
 
+        invalidateAll(req.tenant);
         await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
         res.status(201).json(ct);
     } catch (err) {
@@ -79,8 +82,12 @@ router.put('/:id', authMiddleware, tenantMiddleware, roleMiddleware('contentType
         for (const key of CONTENT_TYPE_ALLOWED) {
             if (req.body[key] !== undefined) body[key] = req.body[key];
         }
+        const oldCt = await ContentType.findOne({ _id: req.params.id, tenantId: req.tenant });
+        if (!oldCt) return res.status(404).json({ message: 'Not found' });
+        if (body.fields || body.name) clearModelCache(oldCt.name);
+        invalidateContentType(req.tenant, oldCt.slug);
+        if (body.slug && body.slug !== oldCt.slug) invalidateContentType(req.tenant, body.slug);
         const ct = await ContentType.findOneAndUpdate({ _id: req.params.id, tenantId: req.tenant }, body, { new: true });
-        if (!ct) return res.status(404).json({ message: 'Not found' });
         res.json(ct);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -99,6 +106,7 @@ router.post('/:id/duplicate', authMiddleware, tenantMiddleware, roleMiddleware('
       createdAt: undefined,
       updatedAt: undefined,
     });
+    invalidateAll(req.tenant);
     await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: dup._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
     res.status(201).json(dup);
   } catch (err) {
@@ -116,6 +124,7 @@ router.delete('/:id', authMiddleware, tenantMiddleware, roleMiddleware('contentT
         await EntryComment.deleteMany({ tenantId: req.tenant, contentTypeSlug: ct.slug });
         await EntryLock.deleteMany({ tenantId: req.tenant, contentTypeSlug: ct.slug });
         clearModelCache(ct.name);
+        invalidateContentType(req.tenant, ct.slug);
         await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'delete', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
         res.json({ message: 'Deleted' });
     } catch (err) {
@@ -163,6 +172,7 @@ router.post('/import/json', authMiddleware, tenantMiddleware, roleMiddleware('co
       locales: locales || ['en'],
       cacheTTL: typeof cacheTTL === 'number' ? cacheTTL : 0
     });
+    invalidateAll(req.tenant);
     await logAudit({ tenantId: req.tenant, userId: req.user?.id, action: 'create', entityType: 'contentType', entityId: ct._id.toString(), ipAddress: req.ip, userAgent: req.headers['user-agent'] });
     res.status(201).json(ct);
   } catch (err) {

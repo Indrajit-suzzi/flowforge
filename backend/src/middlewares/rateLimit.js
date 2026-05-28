@@ -1,16 +1,26 @@
-const createStore = () => {
-  const store = new Map();
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, record] of store.entries()) {
-      if (now > record.resetTime) store.delete(key);
-    }
-  }, 60_000);
-  return store;
+let cleanupInterval = null;
+
+const getCleanupInterval = () => {
+  if (!cleanupInterval) {
+    cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const store of stores) {
+        for (const [key, record] of store.entries()) {
+          if (now > record.resetTime) store.delete(key);
+        }
+      }
+    }, 60_000);
+    if (cleanupInterval.unref) cleanupInterval.unref();
+  }
+  return cleanupInterval;
 };
 
+const stores = [];
+
 const createLimiter = ({ windowMs = 60 * 1000, max = 100, keyGenerator = (req) => req.ip } = {}) => {
-  const store = createStore();
+  const store = new Map();
+  stores.push(store);
+  getCleanupInterval();
   return async (req, res, next) => {
     const key = keyGenerator(req);
     const now = Date.now();

@@ -37,10 +37,9 @@ export default function Pagination({ page, totalPages, onChange }) {
               background: p === page ? 'rgba(255,126,95,0.15)' : 'transparent',
               color: p === page ? '#ff7e5f' : '#94a3b8',
               fontWeight: p === page ? 700 : 400,
-              fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s',
+              fontSize: '13px', cursor: 'pointer',
             }}
-            onMouseEnter={e => { if (p !== page) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-            onMouseLeave={e => { if (p !== page) e.currentTarget.style.background = 'transparent'; }}
+            className="pagination-btn"
           >
             {p}
           </button>

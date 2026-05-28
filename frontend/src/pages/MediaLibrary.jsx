@@ -113,7 +113,7 @@ export default function MediaLibrary() {
               <div key={m._id} className="glass-card-sm" style={{ overflow: 'hidden' }}>
                 {m.type === 'image' ? (
                   <div style={{ height: '140px', background: 'rgba(8,5,17,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    <img src={m.url} alt={m.alt || m.originalName} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'} />
+                    <img src={m.url} alt={m.alt || m.originalName} className="media-thumb-img" />
                   </div>
                 ) : (
                   <div style={{ height: '140px', background: 'rgba(8,5,17,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -4,6 +4,7 @@ import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
+import Pagination from '../components/Pagination';
 
 const fieldTypes = ['text', 'textarea', 'email', 'number', 'select', 'checkbox', 'radio'];
 
@@ -20,10 +21,16 @@ export default function Forms() {
     submitButtonText: 'Submit', successMessage: 'Thank you!', notificationEmail: ''
   });
   const [newField, setNewField] = useState({ name: '', type: 'text', label: '', placeholder: '', required: false, options: '' });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    api.get('/api/v1/forms').then(r => { setForms(r.data || []); }).catch(() => {});
-  }, []);
+    api.get(`/api/v1/forms?page=${page}&limit=100`).then(r => {
+      const resp = r.data || {};
+      setForms(resp.data || resp || []);
+      if (resp.totalPages) setTotalPages(resp.totalPages);
+    }).catch(() => {});
+  }, [page]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,8 +46,7 @@ export default function Forms() {
       setForm({ name: '', slug: '', description: '', fields: [], submitButtonText: 'Submit', successMessage: 'Thank you!', notificationEmail: '' });
       setShowForm(false);
       setEditingId(null);
-      const r = await api.get('/api/v1/forms');
-      setForms(r.data || []);
+      setPage(1);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to save form');
     } finally {
@@ -199,8 +205,10 @@ export default function Forms() {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+
+      <Pagination page={page} totalPages={totalPages} onChange={p => setPage(p)} />
 
       {viewSubmissions && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>

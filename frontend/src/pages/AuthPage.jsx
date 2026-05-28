@@ -15,6 +15,7 @@ export default function AuthPage() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const displayedError = error || (!googleClientId ? 'Google auth is not configured.' : '');
   const apiBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+  const scriptAdded = useRef(false);
 
   useEffect(() => {
     if (user) {
@@ -23,8 +24,13 @@ export default function AuthPage() {
     }
     if (!googleClientId) return;
 
+    const initialized = buttonRef.current?.dataset?.gisInitialized;
+    if (initialized) return;
+
     const renderButton = () => {
       if (!window.google || !buttonRef.current) return;
+      if (buttonRef.current.dataset.gisInitialized) return;
+      buttonRef.current.dataset.gisInitialized = 'true';
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: async ({ credential }) => {
@@ -48,7 +54,8 @@ export default function AuthPage() {
 
     if (window.google) {
       renderButton();
-    } else {
+    } else if (!scriptAdded.current) {
+      scriptAdded.current = true;
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
@@ -57,7 +64,7 @@ export default function AuthPage() {
       script.onerror = () => setError('Could not load Google sign-in.');
       document.head.appendChild(script);
     }
-  }, [googleClientId, googleLogin, navigate, user]);
+  }, [googleClientId, googleLogin, isSignUp, navigate, user]);
 
   const startGithubLogin = () => {
     window.location.href = `${apiBaseUrl}/api/v1/auth/github`;

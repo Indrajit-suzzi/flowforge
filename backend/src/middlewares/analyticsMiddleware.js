@@ -1,10 +1,15 @@
 import Analytics from '../models/analytics.js';
 import logger from '../utils/logger.js';
 
+const interceptors = new WeakSet();
+
 const analyticsMiddleware = async (req, res, next) => {
     const start = Date.now();
     
     const originalJson = res.json.bind(res);
+    if (interceptors.has(res)) return next();
+    interceptors.add(res);
+    
     res.json = (body) => {
         const responseTime = Date.now() - start;
         
@@ -16,7 +21,7 @@ const analyticsMiddleware = async (req, res, next) => {
             apiKeyId: req.apiKeyId,
             responseTime,
             userAgent: req.headers['user-agent'],
-            ip: req.ip || req.connection.remoteAddress
+            ip: req.ip || req.connection?.remoteAddress
         }).catch(err => logger.error({ err }, 'Analytics create failed'));
         
         return originalJson(body);

@@ -85,20 +85,9 @@ export default function DataTable({
               : idx % 2 === 0 
                 ? 'rgba(255, 255, 255, 0.01)' 
                 : 'transparent',
-            transition: 'all 0.2s ease',
             position: 'relative'
           }}
           onClick={() => onRowClick?.(item)}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = selected.includes(item._id || item.id) 
-              ? 'rgba(255, 126, 95, 0.04)' 
-              : idx % 2 === 0 
-                ? 'rgba(255, 255, 255, 0.01)' 
-                : 'transparent';
-          }}
         >
           {hasSelection && (
             <button

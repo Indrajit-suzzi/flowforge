@@ -51,16 +51,19 @@ export default function ContentEntries() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     const trashParam = showTrash ? 'trash=true' : '';
     const statusParam = statusFilter ? `status=${statusFilter}` : '';
     const tagParam = tagFilter ? `tag=${tagFilter}` : '';
     const pageParam = `page=${page}`;
-    const params = [trashParam, statusParam, tagParam, pageParam].filter(Boolean).join('&');
+    const searchParam = search ? `q=${encodeURIComponent(search)}` : '';
+    const params = [trashParam, statusParam, tagParam, pageParam, searchParam].filter(Boolean).join('&');
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data),
       api.get(`/api/v1/dynamic/${slug}${params ? `?${params}` : ''}`).then(r => r.data).catch(() => ({ data: [], total: 0, page: 1, totalPages: 1 })),
       api.get('/api/v1/tags').then(r => r.data).catch(() => [])
     ]).then(([cts, resp, tags]) => {
+      if (cancelled) return;
       const ct = cts?.find(c => c.slug === slug);
       setContentType(ct);
       setEntries((resp.data || resp) || []);
@@ -76,14 +79,16 @@ export default function ContentEntries() {
           Promise.all(refFields.map(f =>
             api.get(`/api/v1/dynamic/${f.refContentType}`).then(r => ({ slug: f.refContentType, data: r.data?.data || r.data || [] })).catch(() => ({ slug: f.refContentType, data: [] }))
           )).then(results => {
+            if (cancelled) return;
             const map = {};
             results.forEach(r => { map[r.slug] = r.data; });
             setRefData(map);
           });
         }
       }
-    }).finally(() => setLoading(false));
-  }, [slug, statusFilter, showTrash, tagFilter, page]);
+    }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [slug, statusFilter, showTrash, tagFilter, page, search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,7 +104,7 @@ export default function ContentEntries() {
       }
       setShowForm(false);
       setEditingEntry(null);
-      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      const r = await api.get(`/api/v1/dynamic/${slug}?page=1&limit=50`);
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to save');
@@ -122,11 +127,9 @@ export default function ContentEntries() {
   const bulkDelete = async () => {
     if (!confirm(`Delete ${selected.length} entries?`)) return;
     try {
-      for (const id of selected) {
-        await api.delete(`/api/v1/dynamic/${slug}/${id}`);
-      }
+      await api.post(`/api/v1/dynamic/${slug}/bulk-delete`, { ids: selected });
       setSelected([]);
-      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      const r = await api.get(`/api/v1/dynamic/${slug}?page=${page}&limit=50`);
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to delete entries');
@@ -135,11 +138,9 @@ export default function ContentEntries() {
 
   const bulkPublish = async () => {
     try {
-      for (const id of selected) {
-        await api.patch(`/api/v1/dynamic/${slug}/${id}/publish`);
-      }
+      await api.post(`/api/v1/dynamic/${slug}/bulk-publish`, { ids: selected });
       setSelected([]);
-      const r = await api.get(`/api/v1/dynamic/${slug}`);
+      const r = await api.get(`/api/v1/dynamic/${slug}?page=${page}&limit=50`);
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to publish entries');
@@ -170,11 +171,12 @@ export default function ContentEntries() {
     setShowForm(false);
   };
 
-  const filtered = entries.filter(e => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return Object.values(e).some(v => (typeof v === 'string' || typeof v === 'number') && String(v).toLowerCase().includes(s));
-  });
+  const debouncedSearch = useRef(null);
+  useEffect(() => {
+    clearTimeout(debouncedSearch.current);
+    debouncedSearch.current = setTimeout(() => setPage(1), 300);
+    return () => clearTimeout(debouncedSearch.current);
+  }, [search]);
 
   if (!contentType) return <div style={{ padding: '32px', color: '#fca5a5' }}>Content type not found</div>;
 
@@ -531,13 +533,13 @@ export default function ContentEntries() {
 
       <DataTable
         columns={columns}
-        data={filtered}
+        data={entries}
         onRowClick={(item) => startEdit(item)}
         selectable
         selected={selected}
-        allSelected={selected.length === filtered.length && filtered.length > 0}
+        allSelected={selected.length === entries.length && entries.length > 0}
         onToggleSelect={(id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-        onSelectAll={() => setSelected(selected.length === filtered.length ? [] : filtered.map(e => e._id))}
+        onSelectAll={() => setSelected(selected.length === entries.length ? [] : entries.map(e => e._id))}
         emptyState={<p style={{ color: '#94a3b8' }}>{search ? 'No matching entries' : showTrash ? 'Trash is empty' : 'No entries yet'}</p>}
         loading={loading}
       />

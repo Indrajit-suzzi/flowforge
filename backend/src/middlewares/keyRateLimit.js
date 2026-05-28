@@ -61,11 +61,12 @@ const keyRateLimit = () => {
   };
 };
 
-setInterval(() => {
+const keyCleanup = setInterval(() => {
   const now = Date.now();
   for (const [key, record] of keyStore.entries()) {
     if (now > record.resetTime) keyStore.delete(key);
   }
 }, 60_000);
+if (keyCleanup.unref) keyCleanup.unref();
 
 export default keyRateLimit;

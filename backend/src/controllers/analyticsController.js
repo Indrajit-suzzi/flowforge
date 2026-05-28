@@ -45,7 +45,7 @@ export const getAnalytics = async (req, res) => {
             { $sort: { count: -1 } }
         ]);
 
-        const recentRequests = await Analytics.find({ tenantId })
+        const recentRequests = await Analytics.find({ tenantId: tid })
             .sort({ createdAt: -1 })
             .limit(20)
             .populate('apiKeyId', 'name');

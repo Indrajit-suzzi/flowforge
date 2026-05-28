@@ -6,11 +6,17 @@ import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
-// GET /api/v1/tags — List all tags
+// GET /api/v1/tags — List all tags (paginated)
 router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
-    const tags = await Tag.find({ tenantId: req.tenant }).sort({ name: 1 });
-    res.json(tags);
+    const { page = 1, limit = 100, search } = req.query;
+    const query = { tenantId: req.tenant };
+    if (search) query.name = { $regex: search, $options: 'i' };
+    const [tags, total] = await Promise.all([
+      Tag.find(query).sort({ name: 1 }).skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Tag.countDocuments(query)
+    ]);
+    res.json({ data: tags, total, page: Number(page), totalPages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

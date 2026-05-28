@@ -6,6 +6,7 @@ import { logAudit } from '../utils/auditLogger.js';
 import { triggerWebhooks } from '../utils/webhookTrigger.js';
 import { cacheControl } from '../utils/cacheControl.js';
 import { validateEntry } from '../utils/fieldValidation.js';
+import { getContentType } from '../utils/contentTypeCache.js';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
@@ -41,7 +42,7 @@ const populateReferences = async (entries, ct, _locale) => {
   const list = isArray ? entries : [entries];
 
   for (const refField of refFields) {
-    const refCt = await ContentType.findOne({ slug: refField.refContentType, tenantId: ct.tenantId });
+    const refCt = await getContentType(ct.tenantId, refField.refContentType);
     if (!refCt) continue;
     const refModel = getModel(refCt.name, Object.fromEntries(refCt.fields.map(f => [f.name, typeMap[f.type] || String])));
     const ids = [...new Set(list.map(e => e[refField.name]).filter(Boolean))];
@@ -77,7 +78,7 @@ const applyLocale = (entry, locale) => {
 
 router.post('/:modelName', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
 
     const validationErrors = validateEntry(ct.fields, req.body);
@@ -112,7 +113,7 @@ router.post('/:modelName', async (req, res) => {
       userAgent: req.headers['user-agent']
     });
     
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.create', contentType: req.params.modelName, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.create', contentType: req.params.modelName, data }).catch(() => {});
     
     res.status(201).json(data);
   } catch (err) {
@@ -122,7 +123,7 @@ router.post('/:modelName', async (req, res) => {
 
 router.get('/:modelName', cacheControl, async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     
@@ -133,6 +134,13 @@ router.get('/:modelName', cacheControl, async (req, res) => {
       filter.isDeleted = true;
     } else {
       filter.isDeleted = { $ne: true };
+    }
+    if (req.query.q) {
+      const searchRegex = new RegExp(req.query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const searchFields = ct.fields.filter(f => f.type === 'String' || f.type === 'RichText').map(f => f.name);
+      if (searchFields.length) {
+        filter.$or = searchFields.map(f => ({ [f]: searchRegex }));
+      }
     }
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -159,7 +167,7 @@ router.get('/:modelName', cacheControl, async (req, res) => {
 
 router.get('/:modelName/:id', cacheControl, async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     let data = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
@@ -181,7 +189,7 @@ router.get('/:modelName/:id', cacheControl, async (req, res) => {
 
 router.put('/:modelName/:id', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
 
     const validationErrors = validateEntry(ct.fields, req.body);
@@ -223,7 +231,7 @@ router.put('/:modelName/:id', async (req, res) => {
       userAgent: req.headers['user-agent']
     });
     
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.update', contentType: req.params.modelName, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.update', contentType: req.params.modelName, data }).catch(() => {});
     
     res.json(data);
   } catch (err) {
@@ -233,7 +241,7 @@ router.put('/:modelName/:id', async (req, res) => {
 
 router.delete('/:modelName/:id', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndUpdate(
@@ -252,7 +260,7 @@ router.delete('/:modelName/:id', async (req, res) => {
       userAgent: req.headers['user-agent']
     });
     
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.delete', contentType: req.params.modelName, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.delete', contentType: req.params.modelName, data }).catch(() => {});
     
     res.json({ message: "Moved to trash" });
   } catch (err) {
@@ -262,7 +270,7 @@ router.delete('/:modelName/:id', async (req, res) => {
 
 router.delete('/:modelName/:id/permanent', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndDelete({ _id: req.params.id, tenantId: req.tenant, isDeleted: true });
@@ -284,7 +292,7 @@ router.delete('/:modelName/:id/permanent', async (req, res) => {
 
 router.patch('/:modelName/:id/restore', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndUpdate(
@@ -314,7 +322,7 @@ router.patch('/:modelName/:id/restore', async (req, res) => {
 
 router.patch('/:modelName/:id/publish', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndUpdate(
@@ -328,7 +336,7 @@ router.patch('/:modelName/:id/publish', async (req, res) => {
       entryId: data._id, data: data.toObject(), status: 'published',
       userId: req.user?.id, description: 'Published'
     });
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.publish', contentType: req.params.modelName, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.publish', contentType: req.params.modelName, data }).catch(() => {});
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -337,7 +345,7 @@ router.patch('/:modelName/:id/publish', async (req, res) => {
 
 router.patch('/:modelName/:id/unpublish', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.findOneAndUpdate(
@@ -359,7 +367,7 @@ router.patch('/:modelName/:id/unpublish', async (req, res) => {
       ipAddress: req.ip, userAgent: req.headers['user-agent']
     });
 
-    triggerWebhooks({ tenantId: req.tenant, event: 'content.unpublish', contentType: req.params.modelName, data });
+    triggerWebhooks({ tenantId: req.tenant, event: 'content.unpublish', contentType: req.params.modelName, data }).catch(() => {});
 
     res.json(data);
   } catch (err) {
@@ -369,7 +377,7 @@ router.patch('/:modelName/:id/unpublish', async (req, res) => {
 
 router.post('/:modelName/import', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
 
     const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
@@ -412,7 +420,7 @@ router.post('/:modelName/import', async (req, res) => {
 
 router.patch('/:modelName/bulk', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
 
@@ -458,7 +466,7 @@ router.patch('/:modelName/bulk', async (req, res) => {
 
 router.post('/:modelName/:id/duplicate', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const original = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
@@ -503,7 +511,7 @@ router.post('/:modelName/:id/duplicate', async (req, res) => {
 
 router.get('/:modelName/:id/versions', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     const versions = await ContentVersion.find({ entryId: req.params.id, tenantId: req.tenant })
       .sort({ version: -1 })
@@ -517,7 +525,7 @@ router.get('/:modelName/:id/versions', async (req, res) => {
 
 router.get('/:modelName/:id/versions/:versionId', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     const version = await ContentVersion.findOne({ _id: req.params.versionId, entryId: req.params.id, tenantId: req.tenant });
     if (!version) return res.status(404).json({ message: 'Version not found' });
@@ -529,7 +537,7 @@ router.get('/:modelName/:id/versions/:versionId', async (req, res) => {
 
 router.get('/:modelName/:id/versions/diff', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     const versions = await ContentVersion.find({ entryId: req.params.id, tenantId: req.tenant })
       .sort({ version: -1 })
@@ -544,7 +552,7 @@ router.get('/:modelName/:id/versions/diff', async (req, res) => {
 
 router.post('/:modelName/:id/verify-password', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const entry = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
@@ -560,7 +568,7 @@ router.post('/:modelName/:id/verify-password', async (req, res) => {
 
 router.post('/:modelName/:id/rollback/:versionId', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     const version = await ContentVersion.findOne({ _id: req.params.versionId, tenantId: req.tenant, entryId: req.params.id });
     if (!version) return res.status(404).json({ message: 'Version not found' });
@@ -602,9 +610,61 @@ router.post('/:modelName/:id/rollback/:versionId', async (req, res) => {
 });
 
 // POST /:modelName/:id/transition — Transition an entry to a workflow stage
+router.post('/:modelName/bulk-delete', async (req, res) => {
+  try {
+    const ct = await getContentType(req.tenant, req.params.modelName);
+    if (!ct) return res.status(404).json({ message: "Content type not found" });
+    const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'No IDs provided' });
+
+    const result = await Model.updateMany(
+      { _id: { $in: ids }, tenantId: req.tenant },
+      { isDeleted: true, deletedAt: new Date() }
+    );
+
+    await logAudit({
+      tenantId: req.tenant, userId: req.user?.id, action: 'bulk_update',
+      entityType: 'entry', entityId: `${ids.length} entries`,
+      metadata: { contentType: ct.name, action: 'bulk_delete' },
+      ipAddress: req.ip, userAgent: req.headers['user-agent']
+    });
+
+    res.json({ status: 'success', message: `Deleted ${result.modifiedCount} entries`, modifiedCount: result.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:modelName/bulk-publish', async (req, res) => {
+  try {
+    const ct = await getContentType(req.tenant, req.params.modelName);
+    if (!ct) return res.status(404).json({ message: "Content type not found" });
+    const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'No IDs provided' });
+
+    await Model.updateMany(
+      { _id: { $in: ids }, tenantId: req.tenant, isDeleted: { $ne: true } },
+      { $set: { status: 'published', publishedAt: new Date() }, $unset: { scheduledPublishAt: 1 } }
+    );
+
+    await logAudit({
+      tenantId: req.tenant, userId: req.user?.id, action: 'bulk_update',
+      entityType: 'entry', entityId: `${ids.length} entries`,
+      metadata: { contentType: ct.name, action: 'bulk_publish' },
+      ipAddress: req.ip, userAgent: req.headers['user-agent']
+    });
+
+    res.json({ status: 'success', message: `Published ${ids.length} entries` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/:modelName/:id/transition', async (req, res) => {
   try {
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: 'Content type not found' });
     if (!ct.workflowEnabled) return res.status(400).json({ message: 'Workflow is not enabled for this content type' });
     const { stage } = req.body;
@@ -645,7 +705,7 @@ router.post('/:modelName/:id/transition', async (req, res) => {
 router.get('/:modelName/export/:format', async (req, res) => {
   try {
     const { format } = req.params;
-    const ct = await ContentType.findOne({ slug: req.params.modelName, tenantId: req.tenant });
+    const ct = await getContentType(req.tenant, req.params.modelName);
     if (!ct) return res.status(404).json({ message: "Content type not found" });
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     const data = await Model.find({ tenantId: req.tenant });

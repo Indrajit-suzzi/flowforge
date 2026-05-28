@@ -7,6 +7,7 @@ import { validate } from '../utils/validate';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import LoadingButton from '../components/LoadingButton';
+import Pagination from '../components/Pagination';
 
 const TAG_COLORS = ['#8b5cf6', '#ff7e5f', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -18,26 +19,20 @@ export default function Tags() {
   const [newColor, setNewColor] = useState('#8b5cf6');
   const [creating, setCreating] = useState(false);
   const [nameErr, setNameErr] = useState('');
-
-  const loadTags = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/api/v1/tags');
-      setTags(data || []);
-    } catch { /* ignore */ }
-    setLoading(false);
-  };
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await api.get('/api/v1/tags');
-        setTags(data || []);
+        const { data } = await api.get(`/api/v1/tags?page=${page}&limit=100`);
+        setTags(data.data || data || []);
+        if (data.totalPages) setTotalPages(data.totalPages);
       } catch { /* ignore */ }
       setLoading(false);
     })();
-  }, []);
+  }, [page]);
 
   const handleCreate = async () => {
     const errs = validate({ name: newName }, { name: { required: true, label: 'Tag name' } });
@@ -48,7 +43,7 @@ export default function Tags() {
       const slug = newName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       await api.post('/api/v1/tags', { name: newName.trim(), slug, color: newColor });
       setNewName('');
-      await loadTags();
+      setPage(1);
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || `Request failed (${err.response?.status || 'network error'})`;
       toast.error(msg);
@@ -61,7 +56,7 @@ export default function Tags() {
     if (!confirm('Delete this tag? Entries using it will keep the tag name but it will no longer be managed.')) return;
     try {
       await api.delete(`/api/v1/tags/${id}`);
-      await loadTags();
+      setPage(1);
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || `Request failed (${err.response?.status || 'network error'})`;
       toast.error(msg);
@@ -133,6 +128,7 @@ export default function Tags() {
             ))}
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onChange={p => setPage(p)} />
       </div>
     </PageShell>
   );

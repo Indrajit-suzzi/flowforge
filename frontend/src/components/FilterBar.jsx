@@ -43,16 +43,7 @@ export default function FilterBar({
                   color: '#f8fafc',
                   fontSize: '13px',
                   outline: 'none',
-                  transition: 'all 0.25s ease, width 0.3s ease',
                   fontFamily: "'Plus Jakarta Sans', sans-serif"
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255, 126, 95, 0.4)';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255, 126, 95, 0.08)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -65,6 +56,7 @@ export default function FilterBar({
                     <button
                       key={opt.value}
                       onClick={() => filter.onChange(opt.value)}
+                      className={`filter-btn ${filter.value === opt.value ? 'active' : ''}`}
                       className={`filter-btn ${filter.value === opt.value ? 'active' : ''}`}
                       style={{
                         padding: '7px 14px',
@@ -79,20 +71,7 @@ export default function FilterBar({
                           : '1px solid transparent',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease',
                         textTransform: 'capitalize'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (filter.value !== opt.value) {
-                          e.currentTarget.style.color = '#e2e8f0';
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (filter.value !== opt.value) {
-                          e.currentTarget.style.color = '#64748b';
-                          e.currentTarget.style.background = 'transparent';
-                        }
                       }}
                     >
                       {opt.label || opt.value || 'All'}
@@ -108,6 +87,7 @@ export default function FilterBar({
                   key={idx}
                   value={filter.value}
                   onChange={(e) => filter.onChange(e.target.value)}
+                  className="filter-select"
                   style={{
                     padding: '9px 14px',
                     background: 'rgba(8, 5, 17, 0.6)',
@@ -118,11 +98,8 @@ export default function FilterBar({
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
                     outline: 'none',
                     cursor: 'pointer',
-                    transition: 'border-color 0.2s ease',
                     minWidth: '120px'
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 126, 95, 0.4)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'; }}
                 >
                   {filter.options.map((opt) => (
                     <option key={opt.value} value={opt.value}>

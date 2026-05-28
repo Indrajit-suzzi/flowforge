@@ -109,14 +109,7 @@ export default function PageShell({
           alignItems: 'center',
           gap: '16px'
         }}>
-          <div style={{
-            width: '40px', height: '40px',
-            borderRadius: '12px',
-            border: '2px solid rgba(255,126,95,0.2)',
-            borderTopColor: '#ff7e5f',
-            animation: 'spin 0.8s linear infinite'
-          }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div className="spinner" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
           <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Loading...</p>
         </div>
       ) : (

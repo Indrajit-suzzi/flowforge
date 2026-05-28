@@ -1,5 +1,6 @@
 import express from 'express';
 import EntryComment from '../models/entryComment.js';
+import User from '../models/user.js';
 
 const router = express.Router();
 
@@ -19,12 +20,17 @@ router.post('/:slug/:entryId', async (req, res) => {
   try {
     const { body, parentCommentId } = req.body;
     if (!body || !body.trim()) return res.status(400).json({ message: 'Comment body is required' });
+    let userName = 'Unknown';
+    if (req.user?.id) {
+      const user = await User.findById(req.user.id).select('username').lean();
+      if (user) userName = user.username;
+    }
     const comment = await EntryComment.create({
       entryId: req.params.entryId,
       contentTypeSlug: req.params.slug,
       tenantId: req.tenant,
       userId: req.user?.id || 'unknown',
-      userName: req.user?.name || 'Unknown',
+      userName,
       body: body.trim(),
       parentCommentId: parentCommentId || null
     });

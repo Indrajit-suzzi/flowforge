@@ -1,9 +1,9 @@
 import express from 'express';
-import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import tenantMiddleware from '../middlewares/tenantMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
+import { getAllContentTypes } from '../utils/contentTypeCache.js';
 
 const router = express.Router();
 const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
@@ -16,7 +16,7 @@ router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
 
-    const contentTypes = await ContentType.find({ tenantId: req.tenant });
+    const contentTypes = await getAllContentTypes(req.tenant);
     const results = [];
 
     for (const ct of contentTypes) {
@@ -69,7 +69,7 @@ router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
 
 router.post('/clear', authMiddleware, tenantMiddleware, roleMiddleware('contentEntries'), async (req, res) => {
   try {
-    const contentTypes = await ContentType.find({ tenantId: req.tenant });
+    const contentTypes = await getAllContentTypes(req.tenant);
     let cleared = 0;
     for (const ct of contentTypes) {
       const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));

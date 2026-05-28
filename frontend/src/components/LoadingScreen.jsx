@@ -21,11 +21,6 @@ export default function LoadingScreen({ message = 'Loading...' }) {
         <p style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>{message}{dots}</p>
         <p style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>Please wait</p>
       </div>
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

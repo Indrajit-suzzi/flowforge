@@ -26,16 +26,29 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const handleSubmit = async () => {
     if (!newBody.trim()) return;
     setSubmitting(true);
+
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      _id: tempId,
+      body: newBody.trim(),
+      userName: currentUser.userName || 'You',
+      userId: currentUser.userId,
+      parentCommentId: replyTo?._id || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    setComments(prev => [optimistic, ...prev]);
+    setNewBody('');
+    setReplyTo(null);
+
     try {
-      await api.post(`/api/v1/comments/${slug}/${entryId}`, {
-        body: newBody.trim(),
-        parentCommentId: replyTo?._id || null,
+      const { data } = await api.post(`/api/v1/comments/${slug}/${entryId}`, {
+        body: optimistic.body,
+        parentCommentId: optimistic.parentCommentId,
       });
-      setNewBody('');
-      setReplyTo(null);
-      const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
-      setComments(updated);
+      setComments(prev => prev.map(c => c._id === tempId ? { ...data, createdAt: data.createdAt || optimistic.createdAt } : c));
     } catch (err) {
+      setComments(prev => prev.filter(c => c._id !== tempId));
       toast.error(err.response?.data?.message || 'Failed to post comment');
     } finally {
       setSubmitting(false);
@@ -44,11 +57,12 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
 
   const handleDelete = async (commentId) => {
     if (!confirm('Delete this comment?')) return;
+    const deleted = comments.find(c => c._id === commentId);
+    setComments(prev => prev.filter(c => c._id !== commentId));
     try {
       await api.delete(`/api/v1/comments/${slug}/${entryId}/${commentId}`);
-      const { data: updated } = await api.get(`/api/v1/comments/${slug}/${entryId}`);
-      setComments(updated);
     } catch (err) {
+      if (deleted) setComments(prev => [...prev, deleted]);
       toast.error(err.response?.data?.message || 'Failed to delete comment');
     }
   };

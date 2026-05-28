@@ -17,6 +17,7 @@ auditLogSchema.index({ tenantId: 1, action: 1 });
 auditLogSchema.index({ tenantId: 1, entityType: 1 });
 auditLogSchema.index({ tenantId: 1, entityId: 1 });
 auditLogSchema.index({ tenantId: 1, userId: 1 });
+auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
 const AuditLog = mongoose.models.AuditLog || mongoose.model('AuditLog', auditLogSchema);
 

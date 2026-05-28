@@ -34,10 +34,14 @@ function Layout({ children }) {
       <div className="admin-glow-blob purple" style={{ bottom: '10%', right: '-8%', width: '600px', height: '600px' }} />
       <div className="page-grid-bg" />
       <Navbar />
-      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}><TenantThemeProvider><ErrorBoundary>{children}</ErrorBoundary></TenantThemeProvider></main>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1 }}><TenantThemeProvider>{children}</TenantThemeProvider></main>
       <Footer />
     </div>
   );
+}
+
+function PageBoundary({ children }) {
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }
 
 function AdminRoute({ children }) {
@@ -82,12 +86,7 @@ function ProtectedLayout({ children }) {
 function PageLoader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <div style={{
-        width: '32px', height: '32px', borderRadius: '50%',
-        border: '3px solid rgba(255,126,95,0.2)', borderTopColor: '#ff7e5f',
-        animation: 'spin 0.8s linear infinite',
-      }} />
-      <style>{'@keyframes spin { to { transform: rotate(360deg) } }'}</style>
+      <div className="spinner" />
     </div>
   );
 }
@@ -112,23 +111,23 @@ export default function App() {
         <Route path="/auth/callback" element={<ErrorBoundary><OAuthCallback /></ErrorBoundary>} />
         <Route path="/sign-up/*" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
         <Route path="/local-login" element={<Navigate to="/sign-in" replace />} />
-        <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
-        <Route path="/content-types" element={<ProtectedLayout><ContentTypes /></ProtectedLayout>} />
-        <Route path="/content/:slug" element={<ProtectedLayout><ContentEntries /></ProtectedLayout>} />
-        <Route path="/api-keys" element={<ProtectedLayout><ApiKeys /></ProtectedLayout>} />
-        <Route path="/media" element={<ProtectedLayout><MediaLibrary /></ProtectedLayout>} />
-        <Route path="/api-docs" element={<ProtectedLayout><ApiDocs /></ProtectedLayout>} />
-        <Route path="/analytics" element={<ProtectedLayout><AdminRoute><Analytics /></AdminRoute></ProtectedLayout>} />
-        <Route path="/audit-logs" element={<ProtectedLayout><AdminRoute><AuditLogs /></AdminRoute></ProtectedLayout>} />
-        <Route path="/webhooks" element={<ProtectedLayout><AdminRoute><Webhooks /></AdminRoute></ProtectedLayout>} />
-        <Route path="/users" element={<ProtectedLayout><AdminRoute><UsersRoles /></AdminRoute></ProtectedLayout>} />
-        <Route path="/roles" element={<ProtectedLayout><AdminRoute><Roles /></AdminRoute></ProtectedLayout>} />
-        <Route path="/forms" element={<ProtectedLayout><Forms /></ProtectedLayout>} />
-        <Route path="/tags" element={<ProtectedLayout><Tags /></ProtectedLayout>} />
-        <Route path="/calendar" element={<ProtectedLayout><ContentCalendar /></ProtectedLayout>} />
-        <Route path="/search" element={<ProtectedLayout><SearchResults /></ProtectedLayout>} />
-        <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
-        <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
+        <Route path="/dashboard" element={<ProtectedLayout><PageBoundary><Dashboard /></PageBoundary></ProtectedLayout>} />
+        <Route path="/content-types" element={<ProtectedLayout><PageBoundary><ContentTypes /></PageBoundary></ProtectedLayout>} />
+        <Route path="/content/:slug" element={<ProtectedLayout><PageBoundary><ContentEntries /></PageBoundary></ProtectedLayout>} />
+        <Route path="/api-keys" element={<ProtectedLayout><PageBoundary><ApiKeys /></PageBoundary></ProtectedLayout>} />
+        <Route path="/media" element={<ProtectedLayout><PageBoundary><MediaLibrary /></PageBoundary></ProtectedLayout>} />
+        <Route path="/api-docs" element={<ProtectedLayout><PageBoundary><ApiDocs /></PageBoundary></ProtectedLayout>} />
+        <Route path="/analytics" element={<ProtectedLayout><AdminRoute><PageBoundary><Analytics /></PageBoundary></AdminRoute></ProtectedLayout>} />
+        <Route path="/audit-logs" element={<ProtectedLayout><AdminRoute><PageBoundary><AuditLogs /></PageBoundary></AdminRoute></ProtectedLayout>} />
+        <Route path="/webhooks" element={<ProtectedLayout><AdminRoute><PageBoundary><Webhooks /></PageBoundary></AdminRoute></ProtectedLayout>} />
+        <Route path="/users" element={<ProtectedLayout><AdminRoute><PageBoundary><UsersRoles /></PageBoundary></AdminRoute></ProtectedLayout>} />
+        <Route path="/roles" element={<ProtectedLayout><AdminRoute><PageBoundary><Roles /></PageBoundary></AdminRoute></ProtectedLayout>} />
+        <Route path="/forms" element={<ProtectedLayout><PageBoundary><Forms /></PageBoundary></ProtectedLayout>} />
+        <Route path="/tags" element={<ProtectedLayout><PageBoundary><Tags /></PageBoundary></ProtectedLayout>} />
+        <Route path="/calendar" element={<ProtectedLayout><PageBoundary><ContentCalendar /></PageBoundary></ProtectedLayout>} />
+        <Route path="/search" element={<ProtectedLayout><PageBoundary><SearchResults /></PageBoundary></ProtectedLayout>} />
+        <Route path="/profile" element={<ProtectedLayout><PageBoundary><Profile /></PageBoundary></ProtectedLayout>} />
+        <Route path="/settings" element={<ProtectedLayout><PageBoundary><Settings /></PageBoundary></ProtectedLayout>} />
       </Routes>
       </Suspense>
     </>

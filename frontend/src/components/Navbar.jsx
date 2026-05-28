@@ -121,16 +121,14 @@ export default function Navbar() {
                     aria-label={`${cat.label} menu`}
                     aria-expanded={isOpen}
                     aria-haspopup="true"
+                    className="nav-cat-btn"
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '8px 16px', fontSize: '13px', fontWeight: 600,
                       color: isOpen ? '#fff' : '#94a3b8',
                       background: isOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
                       border: 'none', borderRadius: '8px', cursor: 'pointer',
-                      transition: 'all 0.15s',
                     }}
-                    onMouseEnter={e => { if (!isOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; } }}
-                    onMouseLeave={e => { if (!isOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8'; } }}
                   >
                     <cat.icon style={{ width: '16px', height: '16px' }} />
                     <span>{cat.label}</span>
@@ -148,13 +146,11 @@ export default function Navbar() {
             <form className="desktop-search" onSubmit={e => { e.preventDefault(); if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`); }} role="search" aria-label="Site search">
               <div style={{ position: 'relative' }}>
                 <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#475569' }} />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." aria-label="Search content" style={{
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." aria-label="Search content" className="navbar-search-input" style={{
                   width: '140px', fontSize: '12px', padding: '6px 10px 6px 30px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px', color: '#e2e8f0', outline: 'none', transition: 'all 0.2s',
+                  borderRadius: '8px', color: '#e2e8f0', outline: 'none',
                 }}
-                  onFocus={e => { e.target.style.width = '200px'; e.target.style.borderColor = 'rgba(255,126,95,0.3)'; }}
-                  onBlur={e => { e.target.style.width = '140px'; e.target.style.borderColor = 'rgba(255,255,255,0.08)'; }}
                 />
               </div>
             </form>
@@ -173,7 +169,7 @@ export default function Navbar() {
             </div>
 
             <button className="mobile-nav-toggle" onClick={() => setMobileOpen(o => !o)} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} style={{
-              display: 'none', alignItems: 'center', justifyContent: 'center',
+              alignItems: 'center', justifyContent: 'center',
               padding: '8px', background: 'transparent', border: 'none',
               borderRadius: '8px', cursor: 'pointer', color: '#94a3b8', flexShrink: 0,
             }}>
@@ -212,16 +208,14 @@ export default function Navbar() {
             {cat.links.map(link => {
               const active = link.to === location.pathname || (link.to === '/content-types' && location.pathname.startsWith('/content'));
               return (
-                <Link key={link.to} to={link.to} onClick={closeAll} style={{
+                <Link key={link.to} to={link.to} onClick={closeAll} className="dropdown-link" style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   padding: '10px 14px', fontSize: '13px',
                   color: active ? '#f8fafc' : '#94a3b8',
                   background: active ? 'rgba(255,126,95,0.08)' : 'transparent',
                   borderRadius: '10px', textDecoration: 'none',
-                  transition: 'all 0.15s', fontWeight: active ? 600 : 400,
+                  fontWeight: active ? 600 : 400,
                 }}
-                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#f8fafc'; } }}
-                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8'; } }}
                 >
                   <link.icon style={{ width: '14px', height: '14px', color: active ? '#ff7e5f' : '#475569' }} />
                   {link.label}

@@ -82,7 +82,6 @@ const getModel = (name, schemaDefinition) => {
   schema.index({ tenantId: 1, tags: 1 });
   schema.index({ tenantId: 1, locale: 1 });
   schema.index({ tenantId: 1, workflowStage: 1 });
-  schema.index({ slug: 1, tenantId: 1 }, { unique: true, sparse: true });
 
   const model = mongoose.model(name, schema);
 

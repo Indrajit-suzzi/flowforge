@@ -65,13 +65,7 @@ export default function SearchResults() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {group.entries.map(entry => (
-              <Link key={entry._id} to={`/content/${group.contentTypeSlug}`} style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
-                background: 'rgba(8,5,17,0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)',
-                textDecoration: 'none', transition: 'all 0.15s ease'
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(8,5,17,0.4)'}
+              <Link key={entry._id} to={`/content/${group.contentTypeSlug}`} className="search-result-link"
               >
                 <FileText style={{ width: '14px', height: '14px', color: '#475569', flexShrink: 0 }} />
                 <span style={{ fontSize: '13px', color: '#e2e8f0', flex: 1 }}>{entry.label}</span>

@@ -5,6 +5,15 @@ import ApiKey from '../models/apiKey.js';
 import logger from '../utils/logger.js';
 import { seedDefaultRoles } from '../utils/seedRoles.js';
 
+const seededTenants = new Set();
+
+const ensureRoles = (tenantId) => {
+  if (!seededTenants.has(tenantId)) {
+    seededTenants.add(tenantId);
+    seedDefaultRoles(tenantId).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
+  }
+};
+
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const xApiKey = req.headers['x-api-key'];
@@ -17,7 +26,7 @@ const authMiddleware = async (req, res, next) => {
       req.user = { id: decoded.id };
       req.tenant = decoded.id;
       req.userRole = decoded.role || 'member';
-      seedDefaultRoles(req.tenant).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
+      ensureRoles(req.tenant);
       return next();
     } catch {
       return res.status(401).json({ message: "Invalid token" });
@@ -44,7 +53,7 @@ const authMiddleware = async (req, res, next) => {
         req.tenant = matchedKey.tenantId.toString();
         req.apiKey = matchedKey;
         req.apiKeyId = matchedKey._id;
-        seedDefaultRoles(req.tenant).catch(err => logger.error({ err }, 'seedDefaultRoles failed'));
+        ensureRoles(req.tenant);
         return next();
       }
       return res.status(401).json({ message: "Invalid API Key" });

@@ -122,22 +122,20 @@ export default function VersionHistory({ slug, entryId, entryName, onClose, onRo
 
   useEffect(() => {
     api.get(`/api/v1/dynamic/${slug}/${entryId}/versions`)
-      .then(r => { setVersions(r.data.data || []); setLoading(false); })
+      .then(r => { setVersions(Array.isArray(r.data) ? r.data : r.data?.data || []); setLoading(false); })
       .catch(err => { setError(err.response?.data?.message || 'Failed to load versions'); setLoading(false); });
   }, [slug, entryId]);
 
   useEffect(() => {
-    if (compareSelection.length === 2) {
-      const [v1, v2] = compareSelection;
-      const from = v1.version < v2.version ? v1._id : v2._id;
-      const to = v1.version < v2.version ? v2._id : v1._id;
-      api.get(`/api/v1/dynamic/${slug}/${entryId}/versions/diff?from=${from}&to=${to}`)
+    const shouldFetch = compareSelection.length === 2;
+    if (shouldFetch) {
+      api.get(`/api/v1/dynamic/${slug}/${entryId}/versions/diff`)
         .then(r => setDiffData(r.data))
         .catch(err => setError(err.response?.data?.message || 'Diff failed'));
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDiffData(null);
     }
+    return () => {
+      if (!shouldFetch) setDiffData(null);
+    };
   }, [compareSelection, slug, entryId]);
 
   const handleRollback = async (version) => {
@@ -311,17 +309,6 @@ export default function VersionHistory({ slug, entryId, entryName, onClose, onRo
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.98); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

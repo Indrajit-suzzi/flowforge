@@ -21,8 +21,14 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const forms = await Form.find({ tenantId: req.tenant }).sort({ createdAt: -1 });
-    res.json(forms);
+    const { page = 1, limit = 100, search } = req.query;
+    const query = { tenantId: req.tenant };
+    if (search) query.name = { $regex: search, $options: 'i' };
+    const [forms, total] = await Promise.all([
+      Form.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Form.countDocuments(query)
+    ]);
+    res.json({ data: forms, total, page: Number(page), totalPages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
