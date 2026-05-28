@@ -1,6 +1,6 @@
 .auth-page-container {
   min-height: 100vh;
-  background: #080511;
+  background: var(--bg-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,14 +36,14 @@
 }
 
 .auth-blob-peach {
-  background: radial-gradient(circle, rgba(255, 126, 95, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--peach-glow) 0%, transparent 70%);
   top: -150px;
   left: -150px;
   animation: blobPulse 15s infinite alternate ease-in-out;
 }
 
 .auth-blob-purple {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--purple-glow) 0%, transparent 70%);
   bottom: -150px;
   right: -150px;
   animation: blobPulse 18s infinite alternate-reverse ease-in-out;
@@ -67,25 +67,25 @@
   max-width: 420px;
   padding: 48px;
   text-align: center;
-  background: rgba(18, 11, 28, 0.7);
+  background: var(--bg-card);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
   border-radius: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: authFadeInUp 0.6s ease-out forwards;
 }
 
 .auth-card h1 {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-heading);
   font-size: 32px;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--color-text-primary);
   margin-bottom: 12px;
 }
 
 .auth-subtitle {
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-size: 15px;
   margin-bottom: 40px;
 }
@@ -105,9 +105,9 @@
   width: 100%;
   padding: 12px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-glass);
   border-radius: 12px;
-  color: #f8fafc;
+  color: var(--color-text-primary);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -116,7 +116,7 @@
 
 .github-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--border-glass-hover);
   transform: scale(1.02);
 }
 
@@ -129,7 +129,7 @@
   align-items: center;
   gap: 16px;
   margin: 24px 0;
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 12px;
   text-transform: uppercase;
 }
@@ -138,19 +138,19 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--border-glass);
 }
 
 .auth-footer {
   margin-top: 32px;
   font-size: 14px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .auth-footer button {
   background: none;
   border: none;
-  color: #ff7e5f;
+  color: var(--color-peach);
   font-weight: 600;
   cursor: pointer;
   margin-left: 6px;

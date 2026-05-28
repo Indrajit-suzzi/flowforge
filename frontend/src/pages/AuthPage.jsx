@@ -14,7 +14,7 @@ export default function AuthPage() {
   const [error, setError] = useState(searchParams.get('error') || '');
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const displayedError = error || (!googleClientId ? 'Google auth is not configured.' : '');
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  const apiBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
   useEffect(() => {
     if (user) {
@@ -41,7 +41,7 @@ export default function AuthPage() {
         size: 'large',
         type: 'standard',
         shape: 'rectangular',
-        text: 'signin_with',
+        text: isSignUp ? 'signup_with' : 'signin_with',
         width: 320,
       });
     };
