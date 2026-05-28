@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { useLocalAuth } from '../contexts/useLocalAuth';
 import { 
   ArrowRight, CheckCircle, Zap, Code, Key, Layers, 
   Shield, LayoutDashboard, Server, Terminal, 
@@ -345,6 +346,8 @@ export default function Landing() {
   const [mouseGlowPos, setMouseGlowPos] = useState({ x: 0, y: 0 });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const featureSectionRef = useRef(null);
+  const { user } = useLocalAuth();
+  const isLoggedIn = !!user;
 
   // Parallax background blobs
   const { scrollY } = useScroll();
@@ -452,12 +455,15 @@ export default function Landing() {
           </nav>
 
           <div className="landing-auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link to="/sign-in" style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', padding: '10px 20px', transition: 'color 0.2s', textDecoration: 'none' }}>
-              Sign In
-            </Link>
-            <Link to="/sign-up" className="btn-primary-peach" style={{ padding: '10px 22px', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              Get Started <ArrowRight style={{ width: '14px', height: '14px' }} />
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/dashboard" className="btn-primary-peach" style={{ padding: '10px 22px', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Dashboard <ArrowRight style={{ width: '14px', height: '14px' }} />
+              </Link>
+            ) : (
+              <Link to="/sign-in" className="btn-primary-peach" style={{ padding: '10px 22px', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Sign In <ArrowRight style={{ width: '14px', height: '14px' }} />
+              </Link>
+            )}
             <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="mobile-nav-toggle" aria-label="Toggle navigation">
               {mobileNavOpen ? <X style={{ width: '20px', height: '20px' }} /> : <Menu style={{ width: '20px', height: '20px' }} />}
             </button>
@@ -490,10 +496,15 @@ export default function Landing() {
               </a>
             ))}
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <Link to="/sign-in" onClick={() => setMobileNavOpen(false)} className="btn-secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px' }}>Sign In</Link>
-              <Link to="/sign-up" onClick={() => setMobileNavOpen(false)} className="btn-primary-peach" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                Get Started <ArrowRight style={{ width: '14px', height: '14px' }} />
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard" onClick={() => setMobileNavOpen(false)} className="btn-primary-peach" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  Dashboard <ArrowRight style={{ width: '14px', height: '14px' }} />
+                </Link>
+              ) : (
+                <Link to="/sign-in" onClick={() => setMobileNavOpen(false)} className="btn-primary-peach" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  Sign In <ArrowRight style={{ width: '14px', height: '14px' }} />
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
@@ -531,8 +542,8 @@ export default function Landing() {
               </p>
               
               <div className="hero-actions" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                <Link to="/sign-up" className="btn-primary-peach" style={{ padding: '16px 32px', fontSize: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  Deploy Workspace <ArrowRight style={{ width: '18px', height: '18px' }} />
+                <Link to={isLoggedIn ? '/dashboard' : '/sign-in'} className="btn-primary-peach" style={{ padding: '16px 32px', fontSize: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {isLoggedIn ? 'Go to Dashboard' : 'Deploy Workspace'} <ArrowRight style={{ width: '18px', height: '18px' }} />
                 </Link>
                 <a href="#features" className="btn-secondary-outline" style={{ padding: '16px 32px', fontSize: '16px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   Explore features
@@ -939,8 +950,8 @@ export default function Landing() {
             <p style={{ fontSize: '17px', color: 'var(--color-text-secondary)', maxWidth: '600px', margin: '0 auto', marginBottom: '40px', lineHeight: '1.6' }}>
               Create an account now and spin up a complete CMS service for your mobile app, website, or blog within seconds.
             </p>
-            <Link to="/sign-up" className="btn-primary-peach" style={{ padding: '16px 36px', fontSize: '16px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              Get Started for Free <ArrowRight style={{ width: '18px', height: '18px' }} />
+            <Link to={isLoggedIn ? '/dashboard' : '/sign-in'} className="btn-primary-peach" style={{ padding: '16px 36px', fontSize: '16px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              {isLoggedIn ? 'Go to Dashboard' : 'Get Started for Free'} <ArrowRight style={{ width: '18px', height: '18px' }} />
             </Link>
           </motion.div>
         </div>
