@@ -61,7 +61,7 @@ export default function ContentEntries() {
     Promise.all([
       api.get('/api/v1/content-types').then(r => r.data),
       api.get(`/api/v1/dynamic/${slug}${params ? `?${params}` : ''}`).then(r => r.data).catch(() => ({ data: [], total: 0, page: 1, totalPages: 1 })),
-      api.get('/api/v1/tags').then(r => r.data).catch(() => [])
+      api.get('/api/v1/tags').then(r => r.data.data).catch(() => [])
     ]).then(([cts, resp, tags]) => {
       if (cancelled) return;
       const ct = cts?.find(c => c.slug === slug);
