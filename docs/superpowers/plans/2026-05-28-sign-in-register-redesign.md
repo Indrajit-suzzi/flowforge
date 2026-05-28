@@ -381,11 +381,11 @@ Run a final pass to ensure all acceptance criteria are met.
 **Files:**
 - N/A
 
-- [ ] **Step 1: Verify all ACs from `docs/superpowers/acceptance/2026-05-28-sign-in-register-redesign.md`**
+- [x] **Step 1: Verify all ACs from `docs/superpowers/acceptance/2026-05-28-sign-in-register-redesign.md`**
   - AC-001 to AC-010 checked.
-- [ ] **Step 2: Run project lint/build**
+- [x] **Step 2: Run project lint/build**
 Run: `npm run lint` and `npm run build` in `frontend/`
-- [ ] **Step 3: Final Commit**
+- [x] **Step 3: Final Commit**
 ```bash
 git commit --allow-empty -m "chore(auth): final verification pass complete"
 ```
