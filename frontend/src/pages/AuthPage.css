@@ -9,6 +9,38 @@
   overflow: hidden;
 }
 
+.auth-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: 1;
+}
+
+.auth-blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 2;
+  opacity: 0.6;
+}
+
+.auth-blob-peach {
+  background: radial-gradient(circle, rgba(255, 126, 95, 0.15) 0%, transparent 70%);
+  top: -150px;
+  left: -150px;
+}
+
+.auth-blob-purple {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  bottom: -150px;
+  right: -150px;
+}
+
 .auth-card {
   position: relative;
   z-index: 10;
@@ -16,4 +48,80 @@
   max-width: 420px;
   padding: 48px;
   text-align: center;
+  background: rgba(18, 11, 28, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.auth-card h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-bottom: 12px;
+}
+
+.auth-subtitle {
+  color: #94a3b8;
+  font-size: 15px;
+  margin-bottom: 40px;
+}
+
+.google-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  margin-bottom: 16px;
+}
+
+.github-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+  color: #475569;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-footer {
+  margin-top: 32px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.auth-footer button {
+  background: none;
+  border: none;
+  color: #ff7e5f;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
 }
