@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { Activity, Clock, BarChart3, TrendingUp, Zap } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import { SkeletonStats } from '../components/Skeleton';
 
 export default function Analytics() {
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('7d');
 
   useEffect(() => {
     api.get(`/api/v1/analytics?period=${period}`).then(r => {
       setData(r.data);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [period]);
 
   const successRate = data?.totalRequests ? ((data.successfulRequests / data.totalRequests) * 100).toFixed(1) : 0;
@@ -30,6 +32,13 @@ export default function Analytics() {
         </div>
       }
     >
+      {loading ? (
+        <>
+          <SkeletonStats count={4} />
+          <div style={{ marginTop: '40px' }} />
+        </>
+      ) : (
+      <>
       <div className="grid-4" style={{ marginBottom: '32px' }}>
         <div className="glass-card stat-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
@@ -130,6 +139,8 @@ export default function Analytics() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </PageShell>
   );
 }

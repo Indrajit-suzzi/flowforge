@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    activeSessions: [{
+      jti: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+    }],
     preferences: {
       language: { type: String, default: 'en' },
       notifications: {

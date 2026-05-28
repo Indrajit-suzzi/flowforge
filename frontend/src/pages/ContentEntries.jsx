@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3 } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3, Loader } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
@@ -40,6 +40,8 @@ export default function ContentEntries() {
   const [importJson, setImportJson] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [refData, setRefData] = useState({});
   const [editingEntry, setEditingEntry] = useState(null);
   const [tagFilter, setTagFilter] = useState('');
@@ -114,6 +116,8 @@ export default function ContentEntries() {
   };
 
   const toggleStatus = async (entry) => {
+    const id = entry._id;
+    setActionLoading(prev => ({ ...prev, [id]: true }));
     try {
       const action = entry.status === 'published' ? 'unpublish' : 'publish';
       await api.patch(`/api/v1/dynamic/${slug}/${entry._id}/${action}`);
@@ -121,11 +125,14 @@ export default function ContentEntries() {
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to toggle status');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [id]: false }));
     }
   };
 
   const bulkDelete = async () => {
     if (!confirm(`Delete ${selected.length} entries?`)) return;
+    setBulkLoading(true);
     try {
       await api.post(`/api/v1/dynamic/${slug}/bulk-delete`, { ids: selected });
       setSelected([]);
@@ -133,10 +140,13 @@ export default function ContentEntries() {
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to delete entries');
+    } finally {
+      setBulkLoading(false);
     }
   };
 
   const bulkPublish = async () => {
+    setBulkLoading(true);
     try {
       await api.post(`/api/v1/dynamic/${slug}/bulk-publish`, { ids: selected });
       setSelected([]);
@@ -144,6 +154,8 @@ export default function ContentEntries() {
       setEntries(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to publish entries');
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -178,7 +190,10 @@ export default function ContentEntries() {
     return () => clearTimeout(debouncedSearch.current);
   }, [search]);
 
-  if (!contentType) return <div style={{ padding: '32px', color: '#fca5a5' }}>Content type not found</div>;
+  if (!contentType) {
+    if (loading) return <PageShell title="Loading..." loading><div /></PageShell>;
+    return <div style={{ padding: '32px', color: '#fca5a5' }}>Content type not found</div>;
+  }
 
   const columns = [
     {
@@ -257,11 +272,11 @@ export default function ContentEntries() {
         <div style={{ display: 'flex', gap: '4px' }}>
           {showTrash ? (
             <>
-              <button onClick={async (e) => { e.stopPropagation(); try { await api.patch(`/api/v1/dynamic/${slug}/${item._id}/restore`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to restore'); } }} className="btn-ghost" style={{ padding: '6px', color: '#34d399' }} title="Restore">
-                <RotateCw style={{ width: '14px', height: '14px' }} />
+              <button onClick={async (e) => { e.stopPropagation(); const id = item._id; setActionLoading(prev => ({ ...prev, [id]: 'restore' })); try { await api.patch(`/api/v1/dynamic/${slug}/${item._id}/restore`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to restore'); } finally { setActionLoading(prev => ({ ...prev, [id]: false })); } }} className="btn-ghost" style={{ padding: '6px', color: '#34d399' }} title="Restore" disabled={actionLoading[item._id]}>
+                {actionLoading[item._id] === 'restore' ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <RotateCw style={{ width: '14px', height: '14px' }} />}
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); if (confirm('Permanently delete this entry?')) { try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}/permanent`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }} title="Delete permanently">
-                <Trash2 style={{ width: '14px', height: '14px' }} />
+              <button onClick={async (e) => { e.stopPropagation(); if (!confirm('Permanently delete this entry?')) return; const id = item._id; setActionLoading(prev => ({ ...prev, [id]: 'perma' })); try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}/permanent`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } finally { setActionLoading(prev => ({ ...prev, [id]: false })); } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }} title="Delete permanently" disabled={actionLoading[item._id]}>
+                {actionLoading[item._id] === 'perma' ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Trash2 style={{ width: '14px', height: '14px' }} />}
               </button>
             </>
           ) : (
@@ -272,8 +287,8 @@ export default function ContentEntries() {
               <button onClick={(e) => { e.stopPropagation(); setCommentEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Comments">
                 <MessageSquare style={{ width: '14px', height: '14px' }} />
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); try { await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data?.data || r.data || []); } catch { toast.error('Failed to duplicate'); } }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate">
-                <Copy style={{ width: '14px', height: '14px' }} />
+              <button onClick={async (e) => { e.stopPropagation(); const id = item._id; setActionLoading(prev => ({ ...prev, [id]: 'dup' })); try { await api.post(`/api/v1/dynamic/${slug}/${item._id}/duplicate`); const r = await api.get(`/api/v1/dynamic/${slug}`); setEntries(r.data?.data || r.data || []); } catch { toast.error('Failed to duplicate'); } finally { setActionLoading(prev => ({ ...prev, [id]: false })); } }} className="btn-ghost" style={{ padding: '6px' }} title="Duplicate" disabled={actionLoading[item._id]}>
+                {actionLoading[item._id] === 'dup' ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
               </button>
               <button onClick={(e) => { e.stopPropagation(); setVersionEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Version history">
                 <History style={{ width: '14px', height: '14px' }} />
@@ -281,11 +296,11 @@ export default function ContentEntries() {
               <button onClick={(e) => { e.stopPropagation(); setTranslateEntry(item); }} className="btn-ghost" style={{ padding: '6px' }} title="Translations">
                 <Globe style={{ width: '14px', height: '14px' }} />
               </button>
-              <button onClick={(e) => { e.stopPropagation(); toggleStatus(item); }} className="btn-ghost" style={{ padding: '6px' }}>
-                {item.status === 'published' ? <EyeOff style={{ width: '14px', height: '14px' }} /> : <Eye style={{ width: '14px', height: '14px' }} />}
+              <button onClick={(e) => { e.stopPropagation(); toggleStatus(item); }} className="btn-ghost" style={{ padding: '6px' }} disabled={actionLoading[item._id]}>
+                {actionLoading[item._id] ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }} /> : item.status === 'published' ? <EyeOff style={{ width: '14px', height: '14px' }} /> : <Eye style={{ width: '14px', height: '14px' }} />}
               </button>
-              <button onClick={async (e) => { e.stopPropagation(); try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }}>
-                <Trash2 style={{ width: '14px', height: '14px' }} />
+              <button onClick={async (e) => { e.stopPropagation(); const id = item._id; setActionLoading(prev => ({ ...prev, [id]: 'del' })); try { await api.delete(`/api/v1/dynamic/${slug}/${item._id}`); setEntries(entries.filter(x => x._id !== item._id)); setSelected(selected.filter(x => x !== item._id)); } catch { toast.error('Failed to delete'); } finally { setActionLoading(prev => ({ ...prev, [id]: false })); } }} className="btn-ghost" style={{ padding: '6px', color: '#fca5a5' }} disabled={actionLoading[item._id]}>
+                {actionLoading[item._id] === 'del' ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Trash2 style={{ width: '14px', height: '14px' }} />}
               </button>
             </>
           )}
@@ -356,9 +371,9 @@ export default function ContentEntries() {
       {selected.length > 0 && !showTrash && (
         <div className="batch-bar">
           <span style={{ fontSize: '13px', color: '#f8fafc' }}>{selected.length} selected</span>
-          <button onClick={bulkPublish} className="btn-ghost" style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>Publish</button>
+          <button onClick={bulkPublish} className="btn-ghost" style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }} disabled={bulkLoading}>{bulkLoading ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }} /> : 'Publish'}</button>
           <button onClick={() => { setShowBulkEdit(true); setBulkEditForm({}); }} className="btn-ghost">Edit</button>
-          <button onClick={bulkDelete} className="btn-danger">Delete</button>
+          <button onClick={bulkDelete} className="btn-danger" disabled={bulkLoading}>{bulkLoading ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }} /> : 'Delete'}</button>
           <button onClick={() => setSelected([])} className="btn-ghost">Clear</button>
         </div>
       )}

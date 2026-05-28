@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { Plus, Layers, Key, FileText, ArrowRight, BarChart3, Sparkles, Download, Activity, Clock, CheckCircle, Shield, User, Eye } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import { SkeletonStats } from '../components/Skeleton';
 import { useRole } from '../hooks/useRole';
 
 export default function Dashboard() {
   const { isAdmin } = useRole();
+  const [loading, setLoading] = useState(true);
   const [contentTypes, setContentTypes] = useState([]);
   const [apiKeys, setApiKeys] = useState([]);
   const [stats, setStats] = useState(null);
@@ -29,7 +31,7 @@ export default function Dashboard() {
     }).catch(() => {
       setContentTypes([]);
       setApiKeys([]);
-    });
+    }).finally(() => setLoading(false));
   }, []);
 
   const actionLabel = (action) => {
@@ -83,6 +85,44 @@ export default function Dashboard() {
         )}
       </div>
 
+      {loading ? (
+        <>
+          <SkeletonStats count={4} />
+          <div style={{ marginTop: '40px' }} />
+          <div className="grid-2" style={{ marginBottom: '24px' }}>
+            <div className="glass-card" style={{ padding: '24px', height: '200px' }}>
+              <div className="skeleton skeleton-heading" style={{ width: '150px' }} />
+              <div style={{ marginTop: '16px' }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton skeleton-row" style={{ marginBottom: '8px' }} />
+                ))}
+              </div>
+            </div>
+            <div className="glass-card" style={{ padding: '24px', height: '200px' }}>
+              <div className="skeleton skeleton-heading" style={{ width: '120px' }} />
+              <div style={{ marginTop: '16px' }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="skeleton skeleton-row" style={{ marginBottom: '8px' }} />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="glass-card" style={{ padding: '28px' }}>
+            <div className="skeleton skeleton-heading" style={{ width: '120px', marginBottom: '20px' }} />
+            <div className="grid-auto-fill">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="glass-card-sm" style={{ padding: '20px', height: '140px' }}>
+                  <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '10px', marginBottom: '14px' }} />
+                  <div className="skeleton skeleton-text-sm" style={{ width: '100px' }} />
+                  <div className="skeleton skeleton-text-sm" style={{ width: '60px', marginTop: '4px' }} />
+                  <div className="skeleton skeleton-text-sm" style={{ width: '80px', marginTop: '12px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+      <>
       {/* Stats Cards */}
       <div className="grid-4" style={{ marginBottom: '40px' }}>
         <Link to="/content-types" style={{ textDecoration: 'none' }}>
@@ -273,6 +313,8 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+        </>
+      )}
     </PageShell>
   );
 }

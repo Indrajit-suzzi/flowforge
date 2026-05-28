@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3, Search, Asterisk } from 'lucide-react';
+import { Plus, Trash2, LayoutTemplate, Layers, Globe, ArrowUp, ArrowDown, Copy, Download, X, BarChart3, Search, Asterisk, Loader } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
+import { SkeletonTable } from '../components/Skeleton';
 
 const FIELD_TYPE_COLORS = {
   String: '#34d399',
@@ -28,6 +29,9 @@ export default function ContentTypes() {
   const [fieldType, setFieldType] = useState('String');
   const [fieldRef, setFieldRef] = useState('');
   const [localeInput, setLocaleInput] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
+  const [templateLoading, setTemplateLoading] = useState(null);
   const [search, setSearch] = useState('');
   const [showImportSchema, setShowImportSchema] = useState(false);
   const [importSchemaJson, setImportSchemaJson] = useState('');
@@ -43,7 +47,7 @@ export default function ContentTypes() {
     ]).then(([cts, temps]) => {
       setContentTypes(cts);
       setTemplates(temps);
-    }).catch(() => {}); 
+    }).catch(() => {}).finally(() => setLoading(false)); 
   }, []);
 
   const handleSubmit = async (e) => {
@@ -63,7 +67,7 @@ export default function ContentTypes() {
   };
 
   const handleTemplate = async (templateSlug) => {
-    setSaving(true);
+    setTemplateLoading(templateSlug);
     try {
       await api.post('/api/v1/content-types/from-template', { templateSlug });
       setShowTemplates(false);
@@ -72,28 +76,34 @@ export default function ContentTypes() {
     } catch {
       toast.error('Failed to apply template');
     } finally {
-      setSaving(false);
+      setTemplateLoading(null);
     }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this content type?')) return;
+    setActionLoading(prev => ({ ...prev, [`delete-${id}`]: true }));
     try {
       await api.delete(`/api/v1/content-types/${id}`);
       const r = await api.get('/api/v1/content-types');
       setContentTypes(r.data || []);
     } catch {
       toast.error('Failed to delete content type');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`delete-${id}`]: false }));
     }
   };
 
   const handleDuplicate = async (id) => {
+    setActionLoading(prev => ({ ...prev, [`dup-${id}`]: true }));
     try {
       await api.post(`/api/v1/content-types/${id}/duplicate`);
       const r = await api.get('/api/v1/content-types');
       setContentTypes(r.data || []);
     } catch {
       toast.error('Failed to duplicate');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`dup-${id}`]: false }));
     }
   };
 
@@ -165,8 +175,8 @@ export default function ContentTypes() {
                       <div style={{ padding: '16px 16px 0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '6px' }}>
                           <p style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', fontFamily: "var(--font-heading)" }}>{t.name}</p>
-                          <button onClick={() => handleTemplate(t.slug)} className="btn-primary" style={{ padding: '5px 12px', fontSize: '11px', border: 'none', whiteSpace: 'nowrap' }}>
-                            <Plus style={{ width: '11px', height: '11px' }} /> Use
+                          <button onClick={() => handleTemplate(t.slug)} className="btn-primary" style={{ padding: '5px 12px', fontSize: '11px', border: 'none', whiteSpace: 'nowrap' }} disabled={templateLoading === t.slug}>
+                            {templateLoading === t.slug ? <Loader className="spin" style={{ width: '11px', height: '11px' }} /> : <Plus style={{ width: '11px', height: '11px' }} />} Use
                           </button>
                         </div>
                         <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>{t.description}</p>
@@ -453,7 +463,9 @@ export default function ContentTypes() {
       />
 
       {/* Content Types List */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : filtered.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">{search ? 'No matching content types' : 'No content types yet'}</p>
           {!search && <button onClick={() => setShowForm(true)} className="btn-primary">Create Content Type</button>}
@@ -470,11 +482,11 @@ export default function ContentTypes() {
                     <button onClick={() => window.open(`/api/v1/content-types/${ct._id}/export/json`, '_blank')} className="btn-ghost" style={{ padding: '6px' }} title="Export schema">
                       <Download style={{ width: '14px', height: '14px' }} />
                     </button>
-                    <button onClick={() => handleDuplicate(ct._id)} className="btn-ghost" style={{ padding: '6px' }}>
-                      <Copy style={{ width: '14px', height: '14px' }} />
+                    <button onClick={() => handleDuplicate(ct._id)} className="btn-ghost" style={{ padding: '6px' }} disabled={actionLoading[`dup-${ct._id}`]}>
+                      {actionLoading[`dup-${ct._id}`] ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
                     </button>
-                    <button onClick={() => handleDelete(ct._id)} className="btn-ghost" style={{ padding: '6px' }}>
-                      <Trash2 style={{ width: '14px', height: '14px' }} />
+                    <button onClick={() => handleDelete(ct._id)} className="btn-ghost" style={{ padding: '6px' }} disabled={actionLoading[`delete-${ct._id}`]}>
+                      {actionLoading[`delete-${ct._id}`] ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Trash2 style={{ width: '14px', height: '14px' }} />}
                     </button>
                   </div>
                 </div>

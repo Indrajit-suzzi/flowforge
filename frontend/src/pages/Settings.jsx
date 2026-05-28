@@ -3,6 +3,7 @@ import { FileText, Bell, Shield, Download, Sparkles, Palette, RotateCcw } from '
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import LoadingButton from '../components/LoadingButton';
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -159,9 +160,9 @@ export default function Settings() {
             <Toggle checked={notifications.webhook} onChange={e => setNotifications({ ...notifications, webhook: e.target.checked })} label="Toggle webhook alerts" />
           </div>
         </div>
-        <button onClick={savePreferences} disabled={savingPrefs} className="btn-primary" style={{ border: 'none' }}>
-          {savingPrefs ? 'Saving...' : 'Save Preferences'}
-        </button>
+        <LoadingButton onClick={savePreferences} loading={savingPrefs} className="btn-primary" style={{ border: 'none' }}>
+          Save Preferences
+        </LoadingButton>
       </div>
 
 
@@ -222,9 +223,9 @@ export default function Settings() {
             <span style={{ fontSize: '14px', color: '#94a3b8', fontFamily: `'${theme.fontFamily}', sans-serif` }}>Aa</span>
           </div>
         </div>
-        <button onClick={saveTheme} disabled={savingTheme} className="btn-primary" style={{ border: 'none' }}>
-          {savingTheme ? 'Saving...' : 'Save Branding'}
-        </button>
+        <LoadingButton onClick={saveTheme} loading={savingTheme} className="btn-primary" style={{ border: 'none' }}>
+          Save Branding
+        </LoadingButton>
       </div>
 
       {/* Data */}

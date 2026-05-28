@@ -3,12 +3,25 @@ import { getAllUsers, getUser, createUser, updateUser, deleteUser, getMe, update
 import authMiddleware from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import ApiKey from '../models/apiKey.js';
+import User from '../models/user.js';
 
 const router = express.Router();
 
 router.get('/me', authMiddleware, getMe);
 router.put('/me', authMiddleware, updateMe);
 router.delete('/me', authMiddleware, deleteMe);
+
+router.post('/me/logout', authMiddleware, async (req, res) => {
+  try {
+    await User.updateOne(
+      { _id: req.user.id },
+      { $pull: { activeSessions: { jti: req.user.jti } } },
+    );
+    res.json({ message: 'Logged out' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.post('/me/revoke-keys', authMiddleware, async (req, res) => {
     try {

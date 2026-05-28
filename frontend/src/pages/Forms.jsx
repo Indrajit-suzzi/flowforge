@@ -5,6 +5,7 @@ import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
 import Pagination from '../components/Pagination';
+import { SkeletonTable } from '../components/Skeleton';
 
 const fieldTypes = ['text', 'textarea', 'email', 'number', 'select', 'checkbox', 'radio'];
 
@@ -16,11 +17,13 @@ export default function Forms() {
   const [editingId, setEditingId] = useState(null);
   const [viewSubmissions, setViewSubmissions] = useState(null);
   const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [form, setForm] = useState({
     name: '', slug: '', description: '', fields: [],
     submitButtonText: 'Submit', successMessage: 'Thank you!', notificationEmail: ''
   });
   const [newField, setNewField] = useState({ name: '', type: 'text', label: '', placeholder: '', required: false, options: '' });
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -29,7 +32,7 @@ export default function Forms() {
       const resp = r.data || {};
       setForms(resp.data || resp || []);
       if (resp.totalPages) setTotalPages(resp.totalPages);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [page]);
 
   const handleSubmit = async (e) => {
@@ -75,11 +78,14 @@ export default function Forms() {
   };
 
   const loadSubmissions = async (formId) => {
+    setLoadingSubmissions(true);
     try {
       const r = await api.get(`/api/v1/forms/${formId}/submissions`);
       setSubmissions(r.data.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to load submissions');
+    } finally {
+      setLoadingSubmissions(false);
     }
   };
 
@@ -165,7 +171,9 @@ export default function Forms() {
         </div>
       )}
 
-      {forms.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : forms.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">No forms yet</p>
           <button onClick={() => setShowForm(true)} className="btn-primary">Create Form</button>
@@ -218,7 +226,9 @@ export default function Forms() {
               <button onClick={() => setViewSubmissions(null)} className="btn-ghost" style={{ padding: '8px' }}><ArrowLeft style={{ width: '16px', height: '16px' }} /></button>
             </div>
             <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
-              {submissions.length === 0 ? (
+              {loadingSubmissions ? (
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '13px' }}>Loading submissions...</p>
+              ) : submissions.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#64748b', padding: '40px', fontSize: '13px' }}>No submissions yet.</p>
               ) : (
                 submissions.map(s => (

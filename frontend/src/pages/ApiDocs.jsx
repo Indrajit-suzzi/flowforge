@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info, Menu, X } from 'lucide-react';
+import { Book, Copy, Check, Download, ChevronRight, Search, Terminal, Key, ExternalLink, AlertCircle, Info, Menu, X, Loader } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
@@ -108,7 +108,10 @@ export default function ApiDocs() {
     }
   };
 
+  const [downloading, setDownloading] = useState(false);
+
   const downloadMarkdown = () => {
+    setDownloading(true);
     api.get('/api/v1/docs/markdown').then(r => {
       const blob = new Blob([r.data], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
@@ -119,7 +122,7 @@ export default function ApiDocs() {
       URL.revokeObjectURL(url);
     }).catch(err => {
       toast.error(err.response?.data?.error || 'Failed to download documentation');
-    });
+    }).finally(() => setDownloading(false));
   };
 
   if (loading) return (
@@ -208,8 +211,8 @@ const posts = await client.get('/dynamic/blog');`;
       icon={<Book style={{ width: '22px', height: '22px' }} />}
       maxWidth="1200px"
       actions={
-        <button onClick={downloadMarkdown} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }}>
-          <Download style={{ width: '14px', height: '14px' }} /> Download Markdown
+        <button onClick={downloadMarkdown} className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px' }} disabled={downloading}>
+          {downloading ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Download style={{ width: '14px', height: '14px' }} />} Download Markdown
         </button>
       }
     >

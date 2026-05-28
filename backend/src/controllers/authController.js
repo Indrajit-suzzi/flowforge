@@ -6,14 +6,41 @@ import User from "../models/user.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const signAppToken = (user) => jwt.sign({
-  id: user._id,
-  role: user.role,
-  iat: Math.floor(Date.now() / 1000),
-  jti: crypto.randomUUID(),
-}, process.env.JWT_SECRET, {
-  expiresIn: "1h",
-});
+const MAX_CONCURRENT_SESSIONS = parseInt(process.env.MAX_CONCURRENT_SESSIONS || '3', 10);
+
+const signAppToken = async (user) => {
+  const jti = crypto.randomUUID();
+  const token = jwt.sign({
+    id: user._id,
+    role: user.role,
+    iat: Math.floor(Date.now() / 1000),
+    jti,
+  }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  await User.updateOne(
+    { _id: user._id },
+    { $push: { activeSessions: { jti, createdAt: new Date() } } },
+  );
+
+  const updated = await User.findOneAndUpdate(
+    { _id: user._id },
+    {},
+    { projection: { activeSessions: 1 } },
+  );
+
+  if (updated.activeSessions.length > MAX_CONCURRENT_SESSIONS) {
+    const sorted = [...updated.activeSessions].sort((a, b) => b.createdAt - a.createdAt);
+    const keep = sorted.slice(0, MAX_CONCURRENT_SESSIONS);
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { activeSessions: keep } },
+    );
+  }
+
+  return token;
+};
 
 const toSafeUser = (user) => {
   const { password: _password, ...safeUser } = user.toObject();
@@ -78,7 +105,7 @@ export const googleLogin = async (req, res) => {
       providerId: payload.sub,
     });
 
-    res.json({ token: signAppToken(user), user: toSafeUser(user) });
+    res.json({ token: await signAppToken(user), user: toSafeUser(user) });
   } catch (err) {
     const isProduction = process.env.NODE_ENV === 'production';
     res.status(err.statusCode || 401).json({ message: isProduction ? 'Google sign-in failed' : err.message });
@@ -163,7 +190,7 @@ export const githubCallback = async (req, res) => {
       providerField: 'githubId',
       providerId: String(profile.id),
     });
-    const token = signAppToken(user);
+    const token = await signAppToken(user);
     const params = new URLSearchParams({ token });
 
     return res.redirect(`${frontendUrl}/auth/callback#${params.toString()}`);

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import ApiKey from '../models/apiKey.js';
+import User from '../models/user.js';
 import logger from '../utils/logger.js';
 import { seedDefaultRoles } from '../utils/seedRoles.js';
 
@@ -23,7 +24,13 @@ const authMiddleware = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = { id: decoded.id };
+      if (decoded.jti) {
+        const user = await User.findOne({ _id: decoded.id }, { activeSessions: 1 });
+        if (!user) return res.status(401).json({ message: "User not found" });
+        const session = user.activeSessions?.find(s => s.jti === decoded.jti);
+        if (!session) return res.status(401).json({ message: "Session expired or revoked" });
+      }
+      req.user = { id: decoded.id, jti: decoded.jti };
       req.tenant = decoded.id;
       req.userRole = decoded.role || 'member';
       ensureRoles(req.tenant);

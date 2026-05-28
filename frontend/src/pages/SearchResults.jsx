@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Search, FileText, ArrowRight, Layers } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import { SkeletonCard } from '../components/Skeleton';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -36,8 +37,8 @@ export default function SearchResults() {
         </div>
       )}
 
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Searching...</div>
+      {loading && query && (
+        <div style={{ padding: '20px 0' }}><SkeletonCard count={3} /></div>
       )}
 
       {!loading && query && total === 0 && (

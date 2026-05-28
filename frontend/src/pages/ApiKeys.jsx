@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Check, Key, BarChart3, X } from 'lucide-react';
+import { Plus, Trash2, Copy, Check, Key, BarChart3, X, Loader } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import { SkeletonTable } from '../components/Skeleton';
 
 const allPerms = ['read', 'write', 'delete'];
 
@@ -11,6 +12,8 @@ export default function ApiKeys() {
   const [apiKeys, setApiKeys] = useState([]);
   const [contentTypes, setContentTypes] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', scopes: [], maxRequests: 100, windowMs: 60000 });
   const [newKey, setNewKey] = useState(null);
@@ -24,7 +27,7 @@ export default function ApiKeys() {
     ]).then(([keys, cts]) => {
       setApiKeys(keys.data || []);
       setContentTypes(cts.data || []);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const toggleScope = (slug, perm) => {
@@ -61,6 +64,7 @@ export default function ApiKeys() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const scopes = form.scopes.length === 0
         ? [{ contentType: '*', permissions: ['read', 'write', 'delete'] }]
@@ -73,6 +77,8 @@ export default function ApiKeys() {
       setApiKeys(r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to create API key');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -159,14 +165,16 @@ export default function ApiKeys() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button type="submit" className="btn-primary">Create</button>
+              <button type="submit" className="btn-primary" disabled={saving}>{saving ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : 'Create'}</button>
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {apiKeys.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : apiKeys.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">No API keys yet</p>
           <button onClick={() => setShowForm(true)} className="btn-primary">Create API Key</button>

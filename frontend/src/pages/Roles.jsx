@@ -141,6 +141,7 @@ export default function Roles() {
       ) : roles.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">No roles defined</p>
+          <button onClick={() => { setEditing(null); setForm({ name: '', slug: '', description: '', permissions: {} }); setShowForm(true); }} className="btn-primary" style={{ marginTop: '16px' }}>Create Role</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon } from 'lucide-react';
+import { Trash2, Image, FileText, Video, Music, Upload, Copy, Check, ImageIcon, Loader } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
 import FilterBar from '../components/FilterBar';
 import Pagination from '../components/Pagination';
+import { SkeletonTable } from '../components/Skeleton';
 
 const typeIcons = { image: Image, document: FileText, video: Video, audio: Music, other: FileText };
 
@@ -15,6 +16,8 @@ export default function MediaLibrary() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [copied, setCopied] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   useEffect(() => { 
@@ -22,7 +25,7 @@ export default function MediaLibrary() {
       const resp = r.data || { data: [], total: 0, page: 1, totalPages: 1 };
       setMedia(resp.data || resp || []);
       if (resp.totalPages) setTotalPages(resp.totalPages);
-    }).catch(() => {}); 
+    }).catch(() => {}).finally(() => setLoading(false)); 
   }, [filter, page]);
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'application/pdf', 'application/json', 'text/plain', 'text/csv'];
@@ -33,13 +36,15 @@ export default function MediaLibrary() {
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
-      alert(`File type "${file.type}" is not allowed.`);
+      toast.error(`File type "${file.type}" is not allowed.`);
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      alert(`File is too large. Maximum size is 50MB.`);
+      toast.error(`File is too large. Maximum size is 50MB.`);
       return;
     }
+
+    setUploading(true);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -50,6 +55,8 @@ export default function MediaLibrary() {
       setMedia(r.data?.data || r.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -80,8 +87,8 @@ export default function MediaLibrary() {
           <button key={t} onClick={() => { setFilter(t); setPage(1); }} className={`filter-btn ${filter === t ? 'active' : ''}`}>{t || 'All'}</button>
         ))}
       </div>
-      <button onClick={() => fileInputRef.current?.click()} className="btn-primary" style={{ padding: '9px 18px', fontSize: '13px' }}>
-        <Upload style={{ width: '14px', height: '14px' }} /> Upload
+      <button onClick={() => fileInputRef.current?.click()} className="btn-primary" style={{ padding: '9px 18px', fontSize: '13px' }} disabled={uploading}>
+        {uploading ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Upload style={{ width: '14px', height: '14px' }} />} Upload
       </button>
       <input ref={fileInputRef} type="file" onChange={handleUpload} style={{ display: 'none' }} />
     </>
@@ -99,7 +106,9 @@ export default function MediaLibrary() {
         actions={filterActions}
       />
 
-      {media.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : media.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <Upload style={{ width: '40px', height: '40px', color: '#475569', marginBottom: '16px', margin: '0 auto 16px', display: 'block' }} />
           <p className="empty-state-text">No files uploaded yet</p>

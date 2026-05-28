@@ -1,4 +1,5 @@
 import { CheckSquare, Square } from 'lucide-react';
+import { SkeletonTable } from './Skeleton';
 
 export default function DataTable({
   columns = [],
@@ -12,7 +13,7 @@ export default function DataTable({
   emptyState,
   loading = false,
 }) {
-  if (loading) return null;
+  if (loading) return <SkeletonTable rows={6} />;
 
   if (data.length === 0) {
     return (

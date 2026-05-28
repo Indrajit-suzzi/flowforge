@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, ChevronLeft, ChevronRight, ArrowUpRight, X, Filter } from 'lucide-react';
 import api from '../utils/api';
 import PageShell from '../components/PageShell';
+import { SkeletonCard } from '../components/Skeleton';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -112,7 +113,7 @@ export default function ContentCalendar() {
           </button>
         </div>
 
-        {loading && <p style={{ textAlign: 'center', color: '#64748b', padding: '40px', fontSize: '13px' }}>Loading...</p>}
+        {loading && <div style={{ padding: '20px 0' }}><SkeletonCard count={3} /></div>}
 
         {!loading && (
           <>

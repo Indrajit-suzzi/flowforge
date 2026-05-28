@@ -10,6 +10,7 @@ export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const { user, googleLogin } = useLocalAuth();
   const [error, setError] = useState(searchParams.get('error') || '');
+  const [githubLoading, setGithubLoading] = useState(false);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const displayedError = error || (!googleClientId ? 'Google auth is not configured.' : '');
   const apiBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
@@ -64,7 +65,8 @@ export default function AuthPage() {
   }, [googleClientId, googleLogin, navigate, user]);
 
   const startGithubLogin = () => {
-    window.location.href = `${apiBaseUrl}/api/v1/auth/github`;
+    setGithubLoading(true);
+    setTimeout(() => { window.location.href = `${apiBaseUrl}/api/v1/auth/github`; }, 150);
   };
 
   return (
@@ -87,8 +89,8 @@ export default function AuthPage() {
           <span>or</span>
         </div>
         
-        <button type="button" onClick={startGithubLogin} className="github-btn">
-          <Code size={18} />
+        <button type="button" onClick={startGithubLogin} className="github-btn" disabled={githubLoading}>
+          {githubLoading ? <span className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} /> : <Code size={18} />}
           Continue with GitHub
         </button>
       </div>

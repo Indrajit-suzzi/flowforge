@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Webhook as WebhookIcon, Check, X, Clock, AlertCircle, List, RotateCw, Play, Shield } from 'lucide-react';
+import { Plus, Trash2, Webhook as WebhookIcon, Check, X, Clock, AlertCircle, List, RotateCw, Play, Shield, Loader } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import Field, { fieldClass } from '../components/Field';
 import { validate } from '../utils/validate';
 import api from '../utils/api';
 import LoadingButton from '../components/LoadingButton';
 import PageShell from '../components/PageShell';
+import { SkeletonTable } from '../components/Skeleton';
 
 function WebhookLogViewer({ webhookId, webhookName, onClose }) {
   const toast = useToast();
@@ -41,7 +42,7 @@ function WebhookLogViewer({ webhookId, webhookName, onClose }) {
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
-          {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', fontSize: '13px' }}>Loading logs...</div>}
+          {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', fontSize: '13px' }}><Loader className="spin" style={{ width: '20px', height: '20px' }} /><br /><span style={{ marginTop: '8px', display: 'inline-block' }}>Loading logs...</span></div>}
 
           {!loading && logs.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', fontSize: '13px' }}>No delivery logs yet.</div>
@@ -146,6 +147,7 @@ export default function Webhooks() {
     setConditionOp('equals');
     setConditionVal('');
   };
+  const [loading, setLoading] = useState(true);
   const [logViewer, setLogViewer] = useState(null);
   const [testing, setTesting] = useState(null);
   const [testResult, setTestResult] = useState(null);
@@ -153,7 +155,7 @@ export default function Webhooks() {
   const [rotateResult, setRotateResult] = useState(null);
 
   useEffect(() => { 
-    api.get('/api/v1/webhooks').then(r => { setWebhooks(r.data || []); }).catch(() => {}); 
+    api.get('/api/v1/webhooks').then(r => { setWebhooks(r.data || []); }).catch(() => {}).finally(() => setLoading(false)); 
   }, []);
 
   const handleSubmit = async (e) => {
@@ -287,7 +289,9 @@ export default function Webhooks() {
         </div>
       )}
 
-      {webhooks.length === 0 ? (
+      {loading ? (
+        <SkeletonTable rows={4} />
+      ) : webhooks.length === 0 ? (
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
           <p className="empty-state-text">No webhooks yet</p>
           <button onClick={() => setShowForm(true)} className="btn-primary">Create Webhook</button>
@@ -309,10 +313,10 @@ export default function Webhooks() {
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button onClick={async () => { setTesting(w._id); try { const r = await api.post(`/api/v1/webhooks/${w._id}/test`); setTestResult({ webhookName: w.name, ...r.data.test }); toast.success('Test sent'); } catch (err) { setTestResult({ webhookName: w.name, status: 'failed', error: err.response?.data?.error || 'Request failed' }); toast.error(err.response?.data?.error || 'Test failed'); } finally { setTesting(null); } }} className="btn-ghost" style={{ padding: '8px' }} title="Test webhook" disabled={testing === w._id}>
-                    <Play style={{ width: '14px', height: '14px', color: testing === w._id ? '#f59e0b' : '#94a3b8' }} />
+                    {testing === w._id ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Play style={{ width: '14px', height: '14px', color: '#94a3b8' }} />}
                   </button>
                   <button onClick={async () => { setRotating(w._id); try { const r = await api.post(`/api/v1/webhooks/${w._id}/rotate-secret`); setRotateResult({ webhookName: w.name, secret: r.data.secret }); setWebhooks(webhooks.map(x => x._id === w._id ? { ...x, secretLastRotated: r.data.secretLastRotated } : x)); } catch (err) { toast.error(err.response?.data?.error || 'Rotation failed'); } finally { setRotating(null); } }} className="btn-ghost" style={{ padding: '8px' }} title="Rotate secret" disabled={rotating === w._id}>
-                    <Shield style={{ width: '14px', height: '14px', color: rotating === w._id ? '#f59e0b' : '#94a3b8' }} />
+                    {rotating === w._id ? <Loader className="spin" style={{ width: '14px', height: '14px' }} /> : <Shield style={{ width: '14px', height: '14px', color: '#94a3b8' }} />}
                   </button>
                   <button onClick={() => setLogViewer(w)} className="btn-ghost" style={{ padding: '8px' }} title="View delivery logs">
                     <List style={{ width: '14px', height: '14px' }} />

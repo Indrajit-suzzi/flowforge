@@ -19,6 +19,7 @@ export default function UsersRoles() {
   const { isAdmin } = useRole();
   const [users, setUsers] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [page, setPage] = useState(1);
@@ -34,7 +35,7 @@ export default function UsersRoles() {
       setUsers(usersResp.data || usersResp || []);
       if (usersResp.totalPages) setTotalPages(usersResp.totalPages);
       setRoles(rolesData);
-    });
+    }).finally(() => setLoading(false));
   }, [page]);
 
   const handleSubmit = async (e) => {
@@ -77,7 +78,7 @@ export default function UsersRoles() {
     }
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !loading) {
     return (
       <div className="page-container">
         <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center' }}>
