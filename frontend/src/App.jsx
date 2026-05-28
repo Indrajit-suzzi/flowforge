@@ -1,13 +1,15 @@
-import { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Code } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import TenantThemeProvider from './components/TenantThemeProvider';
 import { useRole } from './hooks/useRole';
-import { setAuthTokenGetter, setNavigationHandler } from './utils/api';
+import { setNavigationHandler } from './utils/api';
+import { useLocalAuth } from './contexts/useLocalAuth';
 import Landing from './pages/Landing';
+import AuthPage from './pages/AuthPage';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ContentTypes = lazy(() => import('./pages/ContentTypes'));
 const ContentEntries = lazy(() => import('./pages/ContentEntries'));
@@ -25,15 +27,6 @@ const SearchResults = lazy(() => import('./pages/SearchResults'));
 const Forms = lazy(() => import('./pages/Forms'));
 const Tags = lazy(() => import('./pages/Tags'));
 const ContentCalendar = lazy(() => import('./pages/ContentCalendar'));
-const LocalLogin = lazy(() => import('./pages/LocalLogin'));
-
-function AuthTokenBridge() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-
-  setAuthTokenGetter(isLoaded && isSignedIn ? getToken : null);
-
-  return null;
-}
 
 function Layout({ children }) {
   return (
@@ -54,82 +47,37 @@ function AdminRoute({ children }) {
   return children;
 }
 
-const clerkAppearance = {
-  variables: {
-    colorBackground: '#080511',
-    colorInputBackground: '#080511',
-    colorPrimary: '#ff7e5f',
-    colorText: '#f8fafc',
-    colorTextSecondary: '#94a3b8',
-    colorInputText: '#f8fafc',
-    colorTextOnPrimaryBackground: '#080511',
-    colorDanger: '#ef4444',
-    colorSuccess: '#10b981',
-    borderRadius: '10px',
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-    fontFamilyButtons: "'Outfit', sans-serif",
-  },
-  elements: {
-    rootBox: { width: '100%', maxWidth: '420px', margin: '0 auto' },
-    card: { background: 'rgba(18, 11, 28, 0.45)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)' },
-    headerTitle: { color: '#f8fafc', fontSize: '24px', fontWeight: '700', fontFamily: "'Outfit', sans-serif" },
-    headerSubtitle: { color: '#64748b' },
-    formButtonPrimary: { background: 'linear-gradient(135deg, #ff7e5f, #feb47b)', fontWeight: '700', color: '#080511', borderRadius: '12px', fontFamily: "'Outfit', sans-serif" },
-    footerActionLink: { color: '#ff7e5f' },
-    socialButtonsBlockButton: { borderColor: 'rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '10px' },
-    socialButtonsBlockButtonText: { color: '#f8fafc' },
-    dividerLine: { background: 'rgba(255,255,255,0.08)' },
-    dividerText: { color: '#64748b' },
-    formFieldLabel: { color: '#94a3b8' },
-    formFieldInput: { background: '#080511', borderColor: 'rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '10px' },
-    identityPreviewText: { color: '#f8fafc' },
-    identityPreviewEditButton: { color: '#ff7e5f' },
-    identityPreviewEditButtonIcon: { color: '#ff7e5f' },
-    formFieldErrorText: { color: '#fca5a5' },
-    alertText: { color: '#fca5a5' },
-    resendCodeLink: { color: '#ff7e5f' },
-    otpCodeFieldInput: { borderColor: 'rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '10px' },
-    profileSectionPrimaryButton: { color: '#f8fafc', fontFamily: "'Outfit', sans-serif" },
-    menuButton: { color: '#94a3b8' },
-    profileSectionTitle: { color: '#f8fafc', fontFamily: "'Outfit', sans-serif" },
-    profileSectionContent: { color: '#f8fafc' },
-    tableHeader: { color: '#94a3b8' },
-    tableCell: { color: '#f8fafc' },
-    selectButton: { background: '#080511', borderColor: 'rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '10px' },
-    selectSearchInput: { background: '#080511', borderColor: 'rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '10px' },
-  },
-};
+function OAuthCallback() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { completeOAuth } = useLocalAuth();
 
-function SignInPage() {
-  return (
-    <div style={{ minHeight: '100vh', background: '#080511', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', position: 'relative' }}>
-      <div className="page-grid-bg" />
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <SignedIn>
-          <Navigate to="/dashboard" replace />
-        </SignedIn>
-        <SignedOut>
-          <SignIn routing="path" path="/sign-in" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" signUpUrl="/sign-up" appearance={clerkAppearance} />
-        </SignedOut>
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const token = hashParams.get('token') || searchParams.get('token');
+    const error = searchParams.get('error');
+
+    if (token) {
+      completeOAuth(token);
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    navigate(`/sign-in${error ? `?error=${encodeURIComponent(error)}` : ''}`, { replace: true });
+  }, [completeOAuth, navigate, searchParams]);
+
+  return <PageLoader />;
 }
 
-function SignUpPage() {
-  return (
-    <div style={{ minHeight: '100vh', background: '#080511', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', position: 'relative' }}>
-      <div className="page-grid-bg" />
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <SignedIn>
-          <Navigate to="/dashboard" replace />
-        </SignedIn>
-        <SignedOut>
-          <SignUp routing="path" path="/sign-up" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" signInUrl="/sign-in" appearance={clerkAppearance} />
-        </SignedOut>
-      </div>
-    </div>
-  );
+function ProtectedRoute({ children }) {
+  const { user, loading } = useLocalAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/sign-in" replace />;
+  return children;
+}
+
+function ProtectedLayout({ children }) {
+  return <ProtectedRoute><Layout>{children}</Layout></ProtectedRoute>;
 }
 
 function PageLoader() {
@@ -157,31 +105,31 @@ function NavigationBridge() {
 export default function App() {
   return (
     <>
-      <AuthTokenBridge />
       <NavigationBridge />
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
-        <Route path="/sign-in/*" element={<ErrorBoundary><SignInPage /></ErrorBoundary>} />
-        <Route path="/sign-up/*" element={<ErrorBoundary><SignUpPage /></ErrorBoundary>} />
-        <Route path="/local-login" element={<ErrorBoundary><LocalLogin /></ErrorBoundary>} />
-        <Route path="/dashboard" element={<><SignedIn><Layout><Dashboard /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/content-types" element={<><SignedIn><Layout><ContentTypes /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/content/:slug" element={<><SignedIn><Layout><ContentEntries /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/api-keys" element={<><SignedIn><Layout><ApiKeys /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/media" element={<><SignedIn><Layout><MediaLibrary /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/api-docs" element={<><SignedIn><Layout><ApiDocs /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/analytics" element={<><SignedIn><Layout><AdminRoute><Analytics /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/audit-logs" element={<><SignedIn><Layout><AdminRoute><AuditLogs /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/webhooks" element={<><SignedIn><Layout><AdminRoute><Webhooks /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/users" element={<><SignedIn><Layout><AdminRoute><UsersRoles /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/roles" element={<><SignedIn><Layout><AdminRoute><Roles /></AdminRoute></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/forms" element={<><SignedIn><Layout><Forms /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/tags" element={<><SignedIn><Layout><Tags /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/calendar" element={<><SignedIn><Layout><ContentCalendar /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/search" element={<><SignedIn><Layout><SearchResults /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/profile" element={<><SignedIn><Layout><Profile /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
-        <Route path="/settings" element={<><SignedIn><Layout><Settings /></Layout></SignedIn><SignedOut><RedirectToSignIn /></SignedOut></>} />
+        <Route path="/sign-in/*" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
+        <Route path="/auth/callback" element={<ErrorBoundary><OAuthCallback /></ErrorBoundary>} />
+        <Route path="/sign-up/*" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
+        <Route path="/local-login" element={<Navigate to="/sign-in" replace />} />
+        <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+        <Route path="/content-types" element={<ProtectedLayout><ContentTypes /></ProtectedLayout>} />
+        <Route path="/content/:slug" element={<ProtectedLayout><ContentEntries /></ProtectedLayout>} />
+        <Route path="/api-keys" element={<ProtectedLayout><ApiKeys /></ProtectedLayout>} />
+        <Route path="/media" element={<ProtectedLayout><MediaLibrary /></ProtectedLayout>} />
+        <Route path="/api-docs" element={<ProtectedLayout><ApiDocs /></ProtectedLayout>} />
+        <Route path="/analytics" element={<ProtectedLayout><AdminRoute><Analytics /></AdminRoute></ProtectedLayout>} />
+        <Route path="/audit-logs" element={<ProtectedLayout><AdminRoute><AuditLogs /></AdminRoute></ProtectedLayout>} />
+        <Route path="/webhooks" element={<ProtectedLayout><AdminRoute><Webhooks /></AdminRoute></ProtectedLayout>} />
+        <Route path="/users" element={<ProtectedLayout><AdminRoute><UsersRoles /></AdminRoute></ProtectedLayout>} />
+        <Route path="/roles" element={<ProtectedLayout><AdminRoute><Roles /></AdminRoute></ProtectedLayout>} />
+        <Route path="/forms" element={<ProtectedLayout><Forms /></ProtectedLayout>} />
+        <Route path="/tags" element={<ProtectedLayout><Tags /></ProtectedLayout>} />
+        <Route path="/calendar" element={<ProtectedLayout><ContentCalendar /></ProtectedLayout>} />
+        <Route path="/search" element={<ProtectedLayout><SearchResults /></ProtectedLayout>} />
+        <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
+        <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
       </Routes>
       </Suspense>
     </>
