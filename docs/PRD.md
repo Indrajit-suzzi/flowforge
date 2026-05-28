@@ -136,8 +136,7 @@ A reusable, self-hosted CMS platform that combines the flexibility of a headless
 
 #### Auth
 ```
-POST /api/auth/register   { username, email, password }
-POST /api/auth/login      { email, password } → { token }
+POST /api/auth/google     { credential } → { token }
 ```
 
 #### Content Types

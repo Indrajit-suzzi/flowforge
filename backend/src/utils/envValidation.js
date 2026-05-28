@@ -11,8 +11,11 @@ const OPTIONAL_VARS = [
   { name: 'LOG_LEVEL', default: 'debug' },
   { name: 'CORS_ORIGINS', default: 'http://localhost:5173,http://localhost:3000' },
   { name: 'TRUST_PROXY', default: '0' },
-  { name: 'CLERK_SECRET_KEY', default: '' },
-  { name: 'CLERK_PUBLISHABLE_KEY', default: '' },
+  { name: 'GOOGLE_CLIENT_ID', default: '' },
+  { name: 'GOOGLE_CLIENT_SECRET', default: '' },
+  { name: 'GITHUB_CLIENT_ID', default: '' },
+  { name: 'GITHUB_CLIENT_SECRET', default: '' },
+  { name: 'FRONTEND_URL', default: 'http://localhost:5173' },
 ];
 
 export const validateEnv = () => {
@@ -37,8 +40,12 @@ export const validateEnv = () => {
     }
   }
 
-  if (process.env.CLERK_SECRET_KEY && !process.env.CLERK_PUBLISHABLE_KEY) {
-    logger.warn('CLERK_SECRET_KEY is set but CLERK_PUBLISHABLE_KEY is missing');
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    logger.warn('GOOGLE_CLIENT_ID is missing. Google sign-in will be unavailable.');
+  }
+
+  if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+    logger.warn('GitHub OAuth credentials are missing. GitHub sign-in will be unavailable.');
   }
 
   if (process.env.JWT_SECRET === 'change-this-to-a-random-secret-in-production' && process.env.NODE_ENV === 'production') {

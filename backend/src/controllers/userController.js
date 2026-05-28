@@ -105,12 +105,6 @@ export const updateMe = async (req, res) => {
 
 export const deleteMe = async (req, res) => {
     try {
-        if (req.user?.clerkUserId) {
-            const { createClerkClient } = await import('@clerk/backend');
-            const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-            await client.users.deleteUser(req.user.clerkUserId);
-        }
-
         const result = await User.deleteOne({ _id: req.user.id });
         if (result.deletedCount === 0) return res.status(404).json({ message: "User not found" });
 

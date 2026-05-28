@@ -4,30 +4,14 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
 });
 
-let authTokenGetter = null;
 let navigationHandler = null;
-
-export function setAuthTokenGetter(getter) {
-  authTokenGetter = getter;
-}
 
 export function setNavigationHandler(handler) {
   navigationHandler = handler;
 }
 
 async function getAuthToken() {
-  if (authTokenGetter) {
-    return authTokenGetter();
-  }
-
-  const clerk = window.Clerk;
-  if (!clerk) return null;
-
-  if (!clerk.loaded && typeof clerk.load === 'function') {
-    await clerk.load();
-  }
-
-  return clerk.session?.getToken() || null;
+  return localStorage.getItem('auth_token');
 }
 
 api.interceptors.request.use(async (config) => {

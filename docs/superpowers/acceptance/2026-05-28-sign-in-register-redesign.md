@@ -2,7 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-05-28-sign-in-register-redesign-design.md`
 **Date:** 2026-05-28
-**Status:** Draft
+**Status:** Approved
 
 ---
 

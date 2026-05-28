@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Send, Trash2, MessageSquare, Reply } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
-import { useUser } from '@clerk/clerk-react';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const [comments, setComments] = useState([]);
@@ -11,7 +11,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
   const [replyTo, setReplyTo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
-  const { user } = useUser();
+  const currentUser = useCurrentUser();
 
   useEffect(() => {
     (async () => {
@@ -100,7 +100,7 @@ export default function EntryComments({ slug, entryId, entryName, onClose }) {
                   replies={replies(comment._id)}
                   replyTo={replyTo}
                   setReplyTo={setReplyTo}
-                  userId={user?.id}
+                  userId={currentUser.userId}
                   onDelete={handleDelete}
                   formatTime={formatTime}
                   slug={slug}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Plus, ArrowLeft, Trash2, Eye, EyeOff, Download, Upload, FileText, History, Clock, Globe, X, RotateCw, Copy, Lock, Edit3, AlertTriangle, MessageSquare, BarChart3 } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useToast } from '../contexts/ToastContext';
 import api from '../utils/api';
 import RichTextEditor from '../components/RichTextEditor';
@@ -44,9 +44,9 @@ export default function ContentEntries() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [tagFilter, setTagFilter] = useState('');
   const [allTags, setAllTags] = useState([]);
-  const { user } = useUser();
-  const userId = user?.id;
-  const userName = user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Unknown';
+  const currentUser = useCurrentUser();
+  const userId = currentUser.userId;
+  const userName = currentUser.displayName || currentUser.email || 'Unknown';
   const { lock, acquireLock, releaseLock } = useEntryLock(slug, editingEntry?._id, userId, userName);
   const fileInputRef = useRef(null);
 

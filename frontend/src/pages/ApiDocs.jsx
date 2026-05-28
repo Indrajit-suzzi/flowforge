@@ -379,7 +379,7 @@ const posts = await client.get('/dynamic/blog');`;
 
                 <div style={{ marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Method 2: JWT Token</h3>
-                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>For dashboard/admin use. Use the <code style={{ background: 'rgba(8,5,17,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', color: '#ff7e5f' }}>Authorization: Bearer</code> header with your Clerk session token.</p>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>For dashboard/admin use. Use the <code style={{ background: 'rgba(8,5,17,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', color: '#ff7e5f' }}>Authorization: Bearer</code> header with your app JWT.</p>
                   <CodeBlock code="Authorization: Bearer eyJhbGci..." language="Header" id="auth-jwt" copied={copied} onCopy={copyToClipboard} />
                 </div>
 

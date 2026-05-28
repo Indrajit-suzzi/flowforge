@@ -1,12 +1,13 @@
 import express from 'express';
 
-import { register, login } from '../controllers/authController.js';
+import { githubCallback, githubStart, googleLogin } from '../controllers/authController.js';
 import validate from '../middlewares/validateMiddleware.js';
-import { registerSchema, loginSchema } from '../utils/validationSchemas.js';
+import { googleLoginSchema } from '../utils/validationSchemas.js';
 
 const router = express.Router();
 
-router.post('/register', validate(registerSchema), register);
-router.post('/login', validate(loginSchema), login);
+router.post('/google', validate(googleLoginSchema), googleLogin);
+router.get('/github', githubStart);
+router.get('/github/callback', githubCallback);
 
 export default router;

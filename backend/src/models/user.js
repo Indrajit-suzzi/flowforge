@@ -2,7 +2,12 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    clerkId: {
+    googleId: {
+      type: String,
+      index: true,
+      sparse: true,
+    },
+    githubId: {
       type: String,
       index: true,
       sparse: true,

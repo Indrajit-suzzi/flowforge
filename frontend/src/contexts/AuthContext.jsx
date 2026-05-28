@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -22,25 +22,33 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const login = async (email, password) => {
-    const res = await api.post('/api/v1/auth/login', { email, password });
+  const googleLogin = useCallback(async (credential) => {
+    const res = await api.post('/api/v1/auth/google', { credential });
     localStorage.setItem('auth_token', res.data.token);
+    api.defaults.headers.Authorization = `Bearer ${res.data.token}`;
     setToken(res.data.token);
     setUser(res.data.user);
     return res.data;
-  };
+  }, []);
 
-  const logout = () => {
+  const completeOAuth = useCallback((nextToken) => {
+    localStorage.setItem('auth_token', nextToken);
+    api.defaults.headers.Authorization = `Bearer ${nextToken}`;
+    setToken(nextToken);
+    setLoading(true);
+  }, []);
+
+  const logout = useCallback(() => {
     localStorage.removeItem('auth_token');
     setToken(null);
     setUser(null);
+    setLoading(false);
     delete api.defaults.headers.Authorization;
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, googleLogin, completeOAuth, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 }
-

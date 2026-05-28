@@ -39,14 +39,14 @@ A multi-tenant headless CMS with dynamic schema generation, API key management, 
 - **Sitemap Generator** — Auto-generated XML sitemap for all published content
 
 ### Authentication
-- **Clerk** — Modern auth with email, social login, and session management
-- **JWT Fallback** — Works without Clerk by setting `JWT_SECRET` only
+- **Google/GitHub OAuth** — OAuth dashboard sign-in
+- **JWT Sessions** — Backend-issued app JWTs after Google verification
 - **API Keys** — For external integrations and server-to-server calls
 
 ## Tech Stack
 
-- **Backend:** Node.js, Express 5, MongoDB (Mongoose), Clerk, JWT, GraphQL, Joi
-- **Frontend:** React 19, Vite, React Router, Axios, Lucide Icons, TipTap, Clerk
+- **Backend:** Node.js, Express 5, MongoDB (Mongoose), Google Auth, JWT, GraphQL, Joi
+- **Frontend:** React 19, Vite, React Router, Axios, Lucide Icons, TipTap
 - **Styling:** CSS variables + inline styles (dark theme, glass morphism)
 
 ## Project Structure
@@ -71,10 +71,10 @@ flowforge/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # Navbar, Footer, PageShell, RichTextEditor, etc.
-│   │   ├── contexts/        # AuthContext for JWT fallback
+│   │   ├── contexts/        # AuthContext for JWT sessions
 │   │   ├── hooks/           # useRole, useEntryLock
 │   │   ├── pages/           # 20+ pages (dashboard, content, settings, etc.)
-│   │   └── utils/           # API client with Clerk/JWT token injection
+│   │   └── utils/           # API client with JWT token injection
 │   └── vite.config.js
 ├── docs/
 │   └── PRD.md               # Product requirements document
@@ -102,12 +102,13 @@ PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/flowforge
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
-# Optional: Clerk authentication (both required for Clerk mode)
-CLERK_SECRET_KEY=sk_test_...
-CLERK_PUBLISHABLE_KEY=pk_test_...
+GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+GITHUB_CLIENT_ID=your-github-oauth-client-id
+GITHUB_CLIENT_SECRET=your-github-oauth-client-secret
+FRONTEND_URL=http://localhost:5173
+API_PUBLIC_URL=http://localhost:3000
 ```
-
-If Clerk keys are not set, the backend automatically falls back to JWT authentication.
 
 ### Frontend
 
@@ -120,7 +121,7 @@ npm run dev
 **Environment Variables (frontend/.env):**
 
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
 VITE_API_URL=http://localhost:3000
 ```
 
@@ -164,15 +165,12 @@ Custom roles can be created with any combination of permissions via the Roles ma
 
 ### Authentication
 
-**Clerk Session (Dashboard):**
-Automatic — tokens are injected via the Clerk React SDK.
-
 **API Key (External):**
 ```
 X-API-Key: flow_xxxxx...
 ```
 
-**JWT (Fallback):**
+**JWT (Dashboard):**
 ```
 Authorization: Bearer <token>
 ```

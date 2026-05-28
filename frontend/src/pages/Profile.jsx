@@ -38,8 +38,8 @@ export default function Profile() {
       setStats({
         contentTypes: cts?.length || 0,
         entries: statsData?.totalEntries || 0,
-        role: current.user?.publicMetadata?.role || localAuth.user?.role || 'member',
-        memberSince: current.user?.createdAt ? new Date(current.user.createdAt).toLocaleDateString() : localAuth.user?.createdAt ? new Date(localAuth.user.createdAt).toLocaleDateString() : 'N/A',
+        role: localAuth.user?.role || 'member',
+        memberSince: localAuth.user?.createdAt ? new Date(localAuth.user.createdAt).toLocaleDateString() : 'N/A',
       });
     } catch { /* ignore */ }
   };
@@ -60,12 +60,7 @@ export default function Profile() {
     if (Object.keys(errs).length) return;
     setSaving(true);
     try {
-      if (current.isClerk) {
-        await current.user.update({ firstName: form.username });
-        await current.user.reload();
-      } else {
-        await api.put('/api/v1/users/me', { username: form.username });
-      }
+      await api.put('/api/v1/users/me', { username: form.username });
       toast.success('Profile updated');
       setEditing(false);
     } catch {

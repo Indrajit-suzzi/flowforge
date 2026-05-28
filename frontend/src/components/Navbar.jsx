@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Zap, LayoutDashboard, Layers, Key, BarChart3, FileText, Webhook, Image, Users, Settings, User, Book, ChevronDown, LogOut, Shield, Search, Code, ClipboardList, CalendarDays, Tag, Menu, X } from 'lucide-react';
-import { useClerk } from '@clerk/clerk-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useLocalAuth } from '../contexts/useLocalAuth';
 import { useRole } from '../hooks/useRole';
@@ -40,12 +39,10 @@ const categories = [
 ];
 
 export default function Navbar() {
-  const { signOut: clerkSignOut } = useClerk();
-  const { user: clerkUser } = useCurrentUser();
-  const { user: localUser, logout: localLogout } = useLocalAuth();
+  const currentUser = useCurrentUser();
+  const { logout } = useLocalAuth();
   const { isAdmin } = useRole();
 
-  const user = clerkUser || localUser;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -61,12 +58,10 @@ export default function Navbar() {
   const closeAll = useCallback(() => { setOpenCat(null); setUserOpen(false); }, []);
 
   const handleSignOut = () => {
-    if (clerkUser) {
-      clerkSignOut({ redirectUrl: '/' });
-    } else {
-      localLogout();
-      navigate('/');
-    }
+    logout();
+    closeAll();
+    setMobileOpen(false);
+    navigate('/', { replace: true });
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -85,9 +80,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const initials = user?.firstName?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U';
-  const displayName = user?.firstName || user?.username || 'User';
-  const email = user?.primaryEmailAddress?.emailAddress || '';
+  const initials = currentUser.initials;
+  const displayName = currentUser.displayName;
+  const email = currentUser.email;
   const visibleCategories = categories.filter(c => !c.adminOnly || isAdmin);
 
   const getBtn = (label) => btns.current[label];

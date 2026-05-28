@@ -326,13 +326,13 @@ const TECH_STACK = [
   { name: 'Express', icon: Server, color: '#fbbf24', desc: 'Lightweight REST framework with middleware pipeline' },
   { name: 'React 19', icon: Cpu, color: '#60a5fa', desc: 'Client dashboard with route-level code splitting' },
   { name: 'Node.js 20', icon: Terminal, color: '#34d399', desc: 'ESM runtime with cluster mode and graceful shutdown' },
-  { name: 'Clerk Auth', icon: Shield, color: '#a78bfa', desc: 'Dual-mode authentication (Clerk + JWT fallback)' },
+  { name: 'OAuth Auth', icon: Shield, color: '#a78bfa', desc: 'Google and GitHub sign-in with backend-issued JWT sessions' },
   { name: 'Docker', icon: Globe, color: '#38bdf8', desc: 'Multi-stage alpine builds with health-check probes' },
 ];
 
 const TESTIMONIALS = [
   { quote: 'FlowForge cut our content API setup from weeks to hours. The auto-generated schemas and tenant isolation are game-changers.', name: 'Alex Chen', role: 'CTO, Stellar Labs', rating: 5 },
-  { quote: 'The dual auth (Clerk + JWT) made migration painless. Our team was productive in under a day.', name: 'Sarah Mitchell', role: 'Lead Developer, Northwind Digital', rating: 5 },
+  { quote: 'The OAuth sign-in and JWT sessions made onboarding painless. Our team was productive in under a day.', name: 'Sarah Mitchell', role: 'Lead Developer, Northwind Digital', rating: 5 },
   { quote: 'We evaluated Strapi, Sanity, and Directus. FlowForge won on simplicity — no plugins, no config nightmares, just works.', name: 'James Okonkwo', role: 'Founder, Webflow Studios', rating: 5 },
 ];
 
