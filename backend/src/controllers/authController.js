@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.js";
+import Otp from "../models/otp.js";
+import { sendWhatsAppOTP } from "../services/whatsapp.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -12,7 +14,7 @@ const signAppToken = async (user) => {
   const jti = crypto.randomUUID();
   const token = jwt.sign({
     id: user._id,
-    role: user.role,
+    tenantId: user.tenantId || user._id.toString(),
     iat: Math.floor(Date.now() / 1000),
     jti,
   }, process.env.JWT_SECRET, {
@@ -60,6 +62,7 @@ const findOrCreateOAuthUser = async ({ email, username, providerField, providerI
     }
 
     user[providerField] = providerId;
+    if (!user.tenantId) user.tenantId = user._id.toString();
     if (username && user.username !== username) {
       user.username = username;
     }
@@ -74,6 +77,8 @@ const findOrCreateOAuthUser = async ({ email, username, providerField, providerI
     password: await createRandomPasswordHash(),
     role: 'member',
   });
+  user.tenantId = user._id.toString();
+  await user.save();
 
   return user;
 };
@@ -197,5 +202,176 @@ export const githubCallback = async (req, res) => {
   } catch (err) {
     const params = new URLSearchParams({ error: err.message || 'GitHub sign-in failed' });
     return res.redirect(`${frontendUrl}/sign-in?${params.toString()}`);
+  }
+};
+
+const OTP_EXPIRY_MINUTES = 5;
+const MAX_OTP_ATTEMPTS = 5;
+const AUTHKEY_EXPIRY = '15m';
+
+export const requestOTP = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    const recentOtp = await Otp.findOne({
+      phoneNumber,
+      createdAt: { $gt: new Date(Date.now() - 60 * 1000) },
+      verified: false,
+    });
+
+    if (recentOtp) {
+      return res.status(429).json({ error: 'Please wait before requesting a new OTP' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+
+    await Otp.create({
+      phoneNumber,
+      otpHash,
+      expiresAt: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+    });
+
+    await sendWhatsAppOTP(phoneNumber, otp);
+
+    res.json({
+      message: 'OTP sent successfully',
+      expiresIn: OTP_EXPIRY_MINUTES * 60,
+    });
+  } catch (err) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(err.statusCode || 500).json({
+      error: isProduction ? 'Failed to send OTP' : err.message,
+    });
+  }
+};
+
+export const verifyOTP = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    const otpRecord = await Otp.findOne({
+      phoneNumber,
+      verified: false,
+      expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.status(400).json({ error: 'No valid OTP found. Please request a new one.' });
+    }
+
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      return res.status(429).json({ error: 'Too many attempts. Please request a new OTP.' });
+    }
+
+    const isValid = await bcrypt.compare(otp, otpRecord.otpHash);
+
+    if (!isValid) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(401).json({ error: 'Invalid OTP' });
+    }
+
+    otpRecord.verified = true;
+    await otpRecord.save();
+
+    const authkey = jwt.sign(
+      {
+        purpose: 'phone-verification',
+        phoneNumber,
+        verifiedAt: new Date().toISOString(),
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: AUTHKEY_EXPIRY },
+    );
+
+    res.json({ authkey, expiresIn: 15 * 60 });
+  } catch (err) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({
+      error: isProduction ? 'Verification failed' : err.message,
+    });
+  }
+};
+
+export const phoneLogin = async (req, res) => {
+  try {
+    const { authkey } = req.body;
+
+    let decoded;
+    try {
+      decoded = jwt.verify(authkey, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired authkey' });
+    }
+
+    if (decoded.purpose !== 'phone-verification' || !decoded.phoneNumber) {
+      return res.status(403).json({ error: 'Invalid authkey purpose' });
+    }
+
+    const { phoneNumber } = decoded;
+
+    let user = await User.findOne({ phoneNumber });
+
+    if (user) {
+      if (!user.isActive) {
+        return res.status(403).json({ error: 'Account is disabled' });
+      }
+    } else {
+      const username = `user_${phoneNumber.replace(/[^0-9]/g, '')}`;
+      const email = `${username}@phone.flowforge.app`;
+
+      user = await User.create({
+        phoneNumber,
+        username,
+        email,
+        password: await createRandomPasswordHash(),
+        role: 'member',
+        profileComplete: false,
+      });
+      user.tenantId = user._id.toString();
+      await user.save();
+    }
+
+    const token = await signAppToken(user);
+
+    res.json({ token, user: toSafeUser(user) });
+  } catch (err) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({
+      error: isProduction ? 'Phone sign-in failed' : err.message,
+    });
+  }
+};
+
+export const completePhoneProfile = async (req, res) => {
+  try {
+    const { username, email } = req.body;
+
+    if (!username || !email) {
+      return res.status(400).json({ error: 'Username and email are required' });
+    }
+
+    const existingEmail = await User.findOne({ email, _id: { $ne: req.user.id } });
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Email is already in use' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { username, email, profileComplete: true },
+      { new: true, select: { password: 0 } },
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(500).json({
+      error: isProduction ? 'Failed to complete profile' : err.message,
+    });
   }
 };

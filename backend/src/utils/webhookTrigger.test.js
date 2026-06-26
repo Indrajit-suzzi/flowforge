@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
+import { isBlockedAddress, assertPublicWebhookUrl } from './webhookTrigger.js';
 
 const evaluateConditions = (conditions, data) => {
   if (!conditions || !conditions.length) return true;
@@ -107,4 +108,17 @@ test('evaluateConditions - handles nested data object', () => {
 test('evaluateConditions - handles missing field gracefully', () => {
   const conditions = [{ field: 'nonexistent', operator: 'equals', value: 'anything' }];
   assert.strictEqual(evaluateConditions(conditions, { status: 'published' }), false);
+});
+
+test('webhook security - blocks private and metadata IPv4 ranges', () => {
+  assert.strictEqual(isBlockedAddress('127.0.0.1'), true);
+  assert.strictEqual(isBlockedAddress('10.1.2.3'), true);
+  assert.strictEqual(isBlockedAddress('169.254.169.254'), true);
+  assert.strictEqual(isBlockedAddress('8.8.8.8'), false);
+});
+
+test('webhook security - blocks loopback, local IPv6, and non-http URLs', async () => {
+  await assert.rejects(assertPublicWebhookUrl('http://localhost/hook'), /private|internal/);
+  await assert.rejects(assertPublicWebhookUrl('http://[::1]/hook'), /private|reserved/);
+  await assert.rejects(assertPublicWebhookUrl('file:///etc/passwd'), /HTTP or HTTPS/);
 });

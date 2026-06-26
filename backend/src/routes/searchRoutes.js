@@ -4,10 +4,9 @@ import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import tenantMiddleware from '../middlewares/tenantMiddleware.js';
+import { typeMap } from '../utils/contentUtils.js';
 
 const router = express.Router();
-
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 const MAX_SEARCH_LIMIT = 100;
 
 router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {

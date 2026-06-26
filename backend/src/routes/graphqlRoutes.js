@@ -15,7 +15,7 @@ const handler = createHandler({
 });
 
 export const graphqlHandler = async (req, res) => {
-  if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
+  if (process.env.NODE_ENV !== 'production' && req.method === 'GET' && req.headers.accept?.includes('text/html')) {
     res.setHeader('Content-Type', 'text/html');
     return res.end(renderPlaygroundPage({
       endpoint: '/api/v1/graphql',

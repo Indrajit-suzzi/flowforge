@@ -161,11 +161,25 @@ export default function ContentEntries() {
 
   const startEdit = async (entry) => {
     try {
+      let editableEntry = entry;
+      if (entry.accessRequired) {
+        const password = window.prompt('Enter the password for this entry:');
+        if (!password) return;
+        const verification = await api.post(
+          `/api/v1/dynamic/${slug}/${entry._id}/verify-password`,
+          { password },
+        );
+        const accessToken = verification.data?.accessToken;
+        const response = await api.get(`/api/v1/dynamic/${slug}/${entry._id}`, {
+          headers: { 'X-Entry-Access-Token': accessToken },
+        });
+        editableEntry = response.data;
+      }
       const result = await acquireLock();
       if (!result || !result.acquired) return;
-      setEditingEntry(entry);
-      const editForm = { status: entry.status, locale: entry.locale || contentType.locales?.[0] || 'en', scheduledPublishAt: entry.scheduledPublishAt || '', scheduledUnpublishAt: entry.scheduledUnpublishAt || '', accessPassword: '', notes: entry.notes || '', tags: entry.tags || [] };
-      contentType.fields.forEach(f => editForm[f.name] = entry[f.name] ?? (f.type === 'Boolean' ? false : ''));
+      setEditingEntry(editableEntry);
+      const editForm = { status: editableEntry.status, locale: editableEntry.locale || contentType.locales?.[0] || 'en', scheduledPublishAt: editableEntry.scheduledPublishAt || '', scheduledUnpublishAt: editableEntry.scheduledUnpublishAt || '', accessPassword: '', notes: editableEntry.notes || '', tags: editableEntry.tags || [] };
+      contentType.fields.forEach(f => editForm[f.name] = editableEntry[f.name] ?? (f.type === 'Boolean' ? false : ''));
       setForm(editForm);
       setShowForm(true);
     } catch (err) {

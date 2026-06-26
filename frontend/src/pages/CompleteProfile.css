@@ -1,0 +1,70 @@
+.cp-page-container {
+  min-height: 100vh;
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cp-card {
+  max-width: 420px;
+}
+
+.cp-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--color-peach);
+}
+
+.cp-card h1 {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.cp-form {
+  margin-top: 32px;
+  text-align: left;
+}
+
+.cp-field {
+  margin-bottom: 20px;
+}
+
+.cp-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.cp-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  outline: none;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+}
+
+.cp-input:focus {
+  border-color: var(--color-peach);
+  box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.15);
+}
+
+.cp-input::placeholder {
+  color: var(--color-text-muted);
+}

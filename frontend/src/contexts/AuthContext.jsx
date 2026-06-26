@@ -38,6 +38,16 @@ export function AuthProvider({ children }) {
     setLoading(true);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get('/api/v1/users/me');
+      setUser(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('auth_token');
     setToken(null);
@@ -47,7 +57,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, googleLogin, completeOAuth, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, googleLogin, completeOAuth, refreshUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,3 +10,6 @@ coverage
 *.log
 Dockerfile
 docker-compose.yml
+wa-sessions
+wa-sessions-test
+.wwebjs_cache

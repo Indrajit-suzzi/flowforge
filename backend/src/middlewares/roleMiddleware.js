@@ -18,6 +18,16 @@ const hardcodedPermissions = {
 const CACHE_TTL = 60_000;
 const permissionCache = new Map();
 
+export const invalidateRolePermissions = (tenantId, roleSlug = null) => {
+  if (roleSlug) {
+    permissionCache.delete(`${tenantId}-${roleSlug}`);
+    return;
+  }
+  for (const key of permissionCache.keys()) {
+    if (key.startsWith(`${tenantId}-`)) permissionCache.delete(key);
+  }
+};
+
 const getCachedPermissions = async (tenantId, roleSlug) => {
   const key = `${tenantId}-${roleSlug}`;
   const cached = permissionCache.get(key);

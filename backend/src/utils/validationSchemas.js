@@ -73,7 +73,7 @@ export const createRoleSchema = Joi.object({
 
 export const createWebhookSchema = Joi.object({
   name: Joi.string().min(1).max(200).required(),
-  url: Joi.string().uri().required(),
+  url: Joi.string().uri({ scheme: ['http', 'https'] }).required(),
   events: Joi.array().items(Joi.string()).min(1).required(),
   secret: Joi.string().min(16).max(256).required(),
   contentType: Joi.string().allow(''),
@@ -89,7 +89,7 @@ export const createWebhookSchema = Joi.object({
 
 export const updateWebhookSchema = Joi.object({
   name: Joi.string().min(1).max(200),
-  url: Joi.string().uri(),
+  url: Joi.string().uri({ scheme: ['http', 'https'] }),
   events: Joi.array().items(Joi.string()).min(1),
   secret: Joi.string().min(16).max(256),
   contentType: Joi.string().allow(''),
@@ -102,3 +102,21 @@ export const updateWebhookSchema = Joi.object({
     value: Joi.any(),
   })),
 }).min(1);
+
+export const requestOTPSchema = Joi.object({
+  phoneNumber: Joi.string().pattern(/^\+[1-9]\d{1,14}$/).required(),
+});
+
+export const verifyOTPSchema = Joi.object({
+  phoneNumber: Joi.string().pattern(/^\+[1-9]\d{1,14}$/).required(),
+  otp: Joi.string().length(6).pattern(/^\d{6}$/).required(),
+});
+
+export const phoneLoginSchema = Joi.object({
+  authkey: Joi.string().required(),
+});
+
+export const completePhoneProfileSchema = Joi.object({
+  username: Joi.string().min(1).max(100).required(),
+  email: Joi.string().email().required(),
+});

@@ -49,7 +49,10 @@ router.delete('/:slug/:entryId/:commentId', async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this comment' });
     }
     // Delete comment and its replies
-    await EntryComment.deleteMany({ $or: [{ _id: comment._id }, { parentCommentId: comment._id }] });
+    await EntryComment.deleteMany({
+      tenantId: req.tenant,
+      $or: [{ _id: comment._id }, { parentCommentId: comment._id }],
+    });
     res.json({ deleted: true });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -7,8 +7,6 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { common, createLowlight } from 'lowlight';
 import DOMPurify from 'dompurify';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
@@ -17,8 +15,6 @@ import {
   AlignLeft, AlignCenter, AlignRight,
   Undo, Redo, X
 } from 'lucide-react';
-
-const lowlight = createLowlight(common);
 
 const btnStyle = (active = false) => ({
   padding: '6px', background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
@@ -134,10 +130,11 @@ function Toolbar({ editor }) {
 
 export default function RichTextEditor({ value, onChange, placeholder }) {
   const [isFocused, setIsFocused] = useState(false);
+  const sanitizeJob = useRef(null);
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit,
       Underline,
       Link.configure({
         openOnClick: false,
@@ -147,13 +144,21 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder: placeholder || 'Start typing...' }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      CodeBlockLowlight.configure({ lowlight }),
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
       const raw = editor.getHTML();
-      const clean = DOMPurify.sanitize(raw, { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'a', 'img', 'hr'], ALLOWED_ATTR: ['href', 'src', 'alt', 'target', 'rel', 'class', 'style', 'data-placeholder'], ALLOW_DATA_ATTR: false });
-      onChange?.(clean);
+      if (sanitizeJob.current) {
+        if ('cancelIdleCallback' in window) window.cancelIdleCallback(sanitizeJob.current);
+        else clearTimeout(sanitizeJob.current);
+      }
+      const sanitize = () => {
+        const clean = DOMPurify.sanitize(raw, { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'a', 'img', 'hr'], ALLOWED_ATTR: ['href', 'src', 'alt', 'target', 'rel', 'class', 'style', 'data-placeholder'], ALLOW_DATA_ATTR: false });
+        onChange?.(clean);
+      };
+      sanitizeJob.current = 'requestIdleCallback' in window
+        ? window.requestIdleCallback(sanitize, { timeout: 150 })
+        : window.setTimeout(sanitize, 50);
     },
     editorProps: {
       attributes: {
@@ -171,6 +176,12 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
       editor.commands.setContent(value || '', false);
     }
   }, [value, editor]);
+
+  useEffect(() => () => {
+    if (!sanitizeJob.current) return;
+    if ('cancelIdleCallback' in window) window.cancelIdleCallback(sanitizeJob.current);
+    else clearTimeout(sanitizeJob.current);
+  }, []);
 
   return (
     <div style={{ border: `1px solid ${isFocused ? '#3b82f6' : '#1e293b'}`, borderRadius: '8px', overflow: 'hidden', transition: 'border-color 0.15s ease' }}>

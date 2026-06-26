@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { User, Mail, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, CheckCircle, XCircle } from 'lucide-react';
+import { User, Phone, Edit2, X, Activity, FileText, Shield, Calendar, Key, Layers, CheckCircle, XCircle } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useLocalAuth } from '../contexts/useLocalAuth';
 import { useToast } from '../contexts/ToastContext';
@@ -19,6 +19,7 @@ export default function Profile() {
   const formDefaults = useMemo(() => ({ username: current.displayName || '', email: current.email || '' }), [current.displayName, current.email]);
   const [form, setForm] = useState({ username: '', email: '' });
   const [errors, setErrors] = useState({});
+  const phoneNumber = localAuth.user?.phoneNumber || '';
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(true);
@@ -56,15 +57,21 @@ export default function Profile() {
 
   const handleSave = async () => {
     const errs = validate(form, { username: { required: true, label: 'Username', minLength: 2 } });
+    if (form.email) {
+      const emailErr = validate(form, { email: { required: true, label: 'Email', email: true } });
+      if (emailErr.email) errs.email = emailErr.email;
+    }
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setSaving(true);
     try {
-      await api.put('/api/v1/users/me', { username: form.username });
+      const payload = { username: form.username };
+      if (form.email !== current.email) payload.email = form.email;
+      await api.put('/api/v1/users/me', payload);
       toast.success('Profile updated');
       setEditing(false);
-    } catch {
-      toast.error('Failed to update profile');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -129,12 +136,21 @@ export default function Profile() {
                 <p style={{ fontSize: '14px', color: '#f8fafc' }}>{form.username}</p>
               )}
             </Field>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
-                <Mail style={{ width: '12px', height: '12px' }} /> Email
-              </label>
-              <p style={{ fontSize: '14px', color: '#f8fafc' }}>{form.email}</p>
-            </div>
+            <Field label="Email" error={errors.email}>
+              {editing ? (
+                <input value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); }} className={fieldClass(errors.email)} type="email" />
+              ) : (
+                <p style={{ fontSize: '14px', color: '#f8fafc' }}>{form.email}</p>
+              )}
+            </Field>
+            {phoneNumber && (
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>
+                  <Phone style={{ width: '12px', height: '12px' }} /> Phone
+                </label>
+                <p style={{ fontSize: '14px', color: '#f8fafc' }}>{phoneNumber}</p>
+              </div>
+            )}
           </div>
 
           {editing && (

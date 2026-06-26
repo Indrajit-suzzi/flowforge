@@ -1,20 +1,8 @@
 import ContentType from '../models/contentType.js';
 import getModel from '../models/genericModel.js';
-import ContentVersion from '../models/contentVersion.js';
 import { triggerWebhooks } from '../utils/webhookTrigger.js';
 import logger from '../utils/logger.js';
-
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
-
-const saveVersion = async ({ tenantId, contentTypeSlug, contentTypeName, entryId, data, status, description }) => {
-  const lastVersion = await ContentVersion.findOne({ tenantId, entryId }).sort({ version: -1 });
-  const version = (lastVersion?.version || 0) + 1;
-  await ContentVersion.create({
-    tenantId, contentTypeSlug, contentTypeName, entryId,
-    version, data, status: status || data.status || 'draft',
-    createdBy: 'scheduler', changeDescription: description || ''
-  });
-};
+import { typeMap, saveVersion } from '../utils/contentUtils.js';
 
 const processTenantContentType = async (ct) => {
   const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
@@ -39,7 +27,7 @@ const processTenantContentType = async (ct) => {
     await saveVersion({
       tenantId: ct.tenantId, contentTypeSlug: ct.slug, contentTypeName: ct.name,
       entryId: entry._id, data: entry.toObject(), status: 'published',
-      description: 'Auto-published by scheduler'
+      userId: 'scheduler', description: 'Auto-published by scheduler'
     });
 
     try { await triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.publish', contentType: ct.slug, data: entry }); } catch { /* best-effort */ }
@@ -60,7 +48,7 @@ const processTenantContentType = async (ct) => {
     await saveVersion({
       tenantId: ct.tenantId, contentTypeSlug: ct.slug, contentTypeName: ct.name,
       entryId: entry._id, data: entry.toObject(), status: 'draft',
-      description: 'Auto-unpublished by scheduler'
+      userId: 'scheduler', description: 'Auto-unpublished by scheduler'
     });
 
     try { await triggerWebhooks({ tenantId: ct.tenantId.toString(), event: 'content.unpublish', contentType: ct.slug, data: entry }); } catch { /* best-effort */ }

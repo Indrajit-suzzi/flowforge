@@ -1,5 +1,4 @@
 import Analytics from '../models/analytics.js';
-import mongoose from 'mongoose';
 
 export const getAnalytics = async (req, res) => {
     try {
@@ -16,39 +15,47 @@ export const getAnalytics = async (req, res) => {
             default: startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
         }
 
-        const isValidId = mongoose.Types.ObjectId.isValid(String(tenantId));
-        const tid = isValidId ? new mongoose.Types.ObjectId(String(tenantId)) : tenantId;
-        const totalRequests = await Analytics.countDocuments({ tenantId: tid, createdAt: { $gte: startDate } });
-        const successfulRequests = await Analytics.countDocuments({ tenantId: tid, statusCode: { $gte: 200, $lt: 400 }, createdAt: { $gte: startDate } });
-        const failedRequests = await Analytics.countDocuments({ tenantId: tid, statusCode: { $gte: 400 }, createdAt: { $gte: startDate } });
-        const avgResponseTime = await Analytics.aggregate([
-            { $match: { tenantId: tid, createdAt: { $gte: startDate } } },
-            { $group: { _id: null, avg: { $avg: '$responseTime' } } }
-        ]);
-
-        const requestsByDay = await Analytics.aggregate([
-            { $match: { tenantId: tid, createdAt: { $gte: startDate } } },
+        const tid = String(tenantId);
+        const match = { tenantId: tid, createdAt: { $gte: startDate } };
+        const [
+          totalRequests,
+          successfulRequests,
+          failedRequests,
+          avgResponseTime,
+          requestsByDay,
+          requestsByEndpoint,
+          requestsByMethod,
+          recentRequests,
+        ] = await Promise.all([
+          Analytics.countDocuments(match),
+          Analytics.countDocuments({ ...match, statusCode: { $gte: 200, $lt: 400 } }),
+          Analytics.countDocuments({ ...match, statusCode: { $gte: 400 } }),
+          Analytics.aggregate([
+            { $match: match },
+            { $group: { _id: null, avg: { $avg: '$responseTime' } } },
+          ]),
+          Analytics.aggregate([
+            { $match: match },
             { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
-            { $sort: { _id: 1 } }
-        ]);
-
-        const requestsByEndpoint = await Analytics.aggregate([
-            { $match: { tenantId: tid, createdAt: { $gte: startDate } } },
+            { $sort: { _id: 1 } },
+          ]),
+          Analytics.aggregate([
+            { $match: match },
             { $group: { _id: '$endpoint', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
-            { $limit: 10 }
-        ]);
-
-        const requestsByMethod = await Analytics.aggregate([
-            { $match: { tenantId: tid, createdAt: { $gte: startDate } } },
+            { $limit: 10 },
+          ]),
+          Analytics.aggregate([
+            { $match: match },
             { $group: { _id: '$method', count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
-        ]);
-
-        const recentRequests = await Analytics.find({ tenantId: tid })
+            { $sort: { count: -1 } },
+          ]),
+          Analytics.find({ tenantId: tid })
             .sort({ createdAt: -1 })
             .limit(20)
-            .populate('apiKeyId', 'name');
+            .populate('apiKeyId', 'name')
+            .lean(),
+        ]);
 
         res.json({
             totalRequests,
@@ -79,8 +86,7 @@ export const getTopEndpoints = async (req, res) => {
             default: startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
         }
 
-        const isValidId = mongoose.Types.ObjectId.isValid(String(tenantId));
-        const tid = isValidId ? new mongoose.Types.ObjectId(String(tenantId)) : tenantId;
+        const tid = String(tenantId);
         const topEndpoints = await Analytics.aggregate([
             { $match: { tenantId: tid, createdAt: { $gte: startDate } } },
             { $group: { _id: '$endpoint', count: { $sum: 1 }, avgResponseTime: { $avg: '$responseTime' } } },

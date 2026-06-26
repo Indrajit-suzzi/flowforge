@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 const apiKeySchema = new mongoose.Schema({
     tenantId: { type: String, required: true },
     name: { type: String, required: true },
-    key: { type: String, required: true, unique: true },
-    keyHash: { type: String, default: '' },
+    key: { type: String, required: true, unique: true, select: false },
+    keyHash: { type: String, default: '', select: false },
     keyPreview: { type: String, required: true },
     scopes: [{
         contentType: { type: String, required: true },

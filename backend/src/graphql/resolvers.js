@@ -8,19 +8,38 @@ import User from '../models/user.js';
 import Media from '../models/media.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
+import jwt from 'jsonwebtoken';
+import { getRolePermissions } from '../middlewares/roleMiddleware.js';
+import { typeMap, saveVersion } from '../utils/contentUtils.js';
 
 const getModelForCt = (ct) => getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
 
-const saveVersion = async ({ tenantId, contentTypeSlug, contentTypeName, entryId, data, status, userId, description }) => {
-  const lastVersion = await ContentVersion.findOne({ tenantId, entryId }).sort({ version: -1 });
-  const version = (lastVersion?.version || 0) + 1;
-  await ContentVersion.create({
-    tenantId, contentTypeSlug, contentTypeName, entryId,
-    version, data, status: status || data.status || 'draft',
-    createdBy: userId, changeDescription: description || ''
-  });
+const requirePermission = async (req, permission) => {
+  if (!req.user) throw new Error('User authentication required');
+  const permissions = await getRolePermissions(req.tenant, req.userRole || 'member');
+  if (!permissions[permission]) throw new Error('Insufficient permissions');
+};
+
+const protectEntry = (req, entry, fields = null) => {
+  const result = entry.toObject ? entry.toObject() : { ...entry };
+  const passwordProtected = !!result.accessPassword;
+  let canAccess = !passwordProtected || req.userRole === 'admin';
+  const token = req.headers['x-entry-access-token'];
+  if (!canAccess && token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET, { audience: 'entry-access' });
+      canAccess = decoded.entryId === result._id.toString() && decoded.tenantId === req.tenant;
+    } catch {
+      canAccess = false;
+    }
+  }
+  delete result.accessPassword;
+  delete result.notes;
+  if (!canAccess) {
+    if (!fields) throw new Error('Entry password required');
+    for (const field of fields) delete result[field.name];
+  }
+  return { ...result, passwordProtected, accessRequired: passwordProtected && !canAccess };
 };
 
 export const resolvers = {
@@ -41,6 +60,7 @@ export const resolvers = {
         filter.$or = ct.fields.filter(f => f.type === 'String').map(f => ({ [f.name]: { $regex: search, $options: 'i' } }));
       }
       let data = await Model.find(filter).sort({ createdAt: -1 }).lean();
+      data = data.map(entry => protectEntry(req, entry, ct.fields));
       if (locale) {
         data = data.map(e => {
           if (!e.translations?.length) return { ...e, data: e };
@@ -64,9 +84,11 @@ export const resolvers = {
         const t = entry.translations.find(t => t.locale === locale);
         if (t) entry = { ...entry, ...Object.fromEntries(t.fields || new Map()) };
       }
+      entry = protectEntry(req, entry);
       return { ...entry, data: entry };
     },
     apiKeys: async (_, __, { req }) => {
+      await requirePermission(req, 'apiKeys');
       const keys = await ApiKey.find({ tenantId: req.tenant });
       return keys.map(k => ({
         _id: k._id, name: k.name, keyPreview: k.keyPreview,
@@ -79,7 +101,7 @@ export const resolvers = {
       return null;
     },
     users: async (_, __, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'userManagement');
       return User.find({ tenantId: req.tenant }).lean();
     },
     media: async (_, __, { req }) => {
@@ -94,7 +116,7 @@ export const resolvers = {
 
   Mutation: {
     createEntry: async (_, { contentTypeSlug, data }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentEntries');
       const ct = await ContentType.findOne({ tenantId: req.tenant, slug: contentTypeSlug });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);
@@ -115,7 +137,7 @@ export const resolvers = {
       return { ...entry.toObject(), data: entry.toObject() };
     },
     updateEntry: async (_, { contentTypeSlug, id, data }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentEntries');
       const ct = await ContentType.findOne({ tenantId: req.tenant, slug: contentTypeSlug });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);
@@ -136,7 +158,7 @@ export const resolvers = {
       return { ...entry.toObject(), data: entry.toObject() };
     },
     deleteEntry: async (_, { contentTypeSlug, id }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentEntries');
       const ct = await ContentType.findOne({ tenantId: req.tenant, slug: contentTypeSlug });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);
@@ -144,7 +166,7 @@ export const resolvers = {
       return { message: 'Entry deleted' };
     },
     publishEntry: async (_, { contentTypeSlug, id }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentEntries');
       const ct = await ContentType.findOne({ tenantId: req.tenant, slug: contentTypeSlug });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);
@@ -162,7 +184,7 @@ export const resolvers = {
       return { ...entry.toObject(), data: entry.toObject() };
     },
     unpublishEntry: async (_, { contentTypeSlug, id }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentEntries');
       const ct = await ContentType.findOne({ tenantId: req.tenant, slug: contentTypeSlug });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);
@@ -180,23 +202,29 @@ export const resolvers = {
       return { ...entry.toObject(), data: entry.toObject() };
     },
     createApiKey: async (_, { name }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'apiKeys');
       const rawKey = `flow_${crypto.randomBytes(24).toString('hex')}`;
       const hashed = await bcrypt.hash(rawKey, 10);
       const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
       const preview = rawKey.substring(0, 10) + '...' + rawKey.substring(rawKey.length - 4);
       const key = await ApiKey.create({
-        tenantId: req.tenant, name, key: hashed, keyHash, keyPreview: preview, isActive: true
+        tenantId: req.tenant,
+        name,
+        key: hashed,
+        keyHash,
+        keyPreview: preview,
+        isActive: true,
+        scopes: [{ contentType: '*', permissions: ['read'] }],
       });
       return { _id: key._id, name: key.name, key: rawKey, isActive: true, createdAt: key.createdAt, updatedAt: key.updatedAt };
     },
     revokeApiKey: async (_, { id }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'apiKeys');
       await ApiKey.findOneAndUpdate({ _id: id, tenantId: req.tenant }, { isActive: false });
       return { message: 'API key revoked' };
     },
     createContentType: async (_, { name, slug, fields, locales }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentTypes');
       const FIELD_ALLOWED = ['name', 'type', 'required', 'localizable', 'refContentType', 'pattern', 'patternMessage', 'minLength', 'maxLength', 'min', 'max', 'defaultValue'];
       const ct = await ContentType.create({
         tenantId: req.tenant, name, slug,
@@ -214,7 +242,7 @@ export const resolvers = {
       return ct.toObject();
     },
     deleteContentType: async (_, { id }, { req }) => {
-      if (!req.user) throw new Error('Not authenticated');
+      await requirePermission(req, 'contentTypes');
       const ct = await ContentType.findOneAndDelete({ _id: id, tenantId: req.tenant });
       if (!ct) throw new Error('Content type not found');
       const Model = getModelForCt(ct);

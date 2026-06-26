@@ -4,9 +4,9 @@ import getModel from '../models/genericModel.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import tenantMiddleware from '../middlewares/tenantMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
+import { typeMap } from '../utils/contentUtils.js';
 
 const router = express.Router();
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
 router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {
@@ -14,25 +14,33 @@ router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
     const breakdown = [];
     let totalEntries = 0, totalPublished = 0, totalScheduled = 0, totalDrafts = 0, totalForms = 0, totalWebhooks = 0;
 
-    for (const ct of cts) {
+    const contentStats = await Promise.all(cts.map(async (ct) => {
       const schema = Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String]));
       const Model = getModel(ct.name, schema);
-      const all = await Model.countDocuments({ tenantId: req.tenant, isDeleted: { $ne: true } });
-      const published = await Model.countDocuments({ tenantId: req.tenant, status: 'published', isDeleted: { $ne: true } });
-      const scheduled = await Model.countDocuments({ tenantId: req.tenant, status: 'scheduled', isDeleted: { $ne: true } });
-      const drafts = await Model.countDocuments({ tenantId: req.tenant, status: 'draft', isDeleted: { $ne: true } });
+      const [all, published, scheduled, drafts] = await Promise.all([
+        Model.countDocuments({ tenantId: req.tenant, isDeleted: { $ne: true } }),
+        Model.countDocuments({ tenantId: req.tenant, status: 'published', isDeleted: { $ne: true } }),
+        Model.countDocuments({ tenantId: req.tenant, status: 'scheduled', isDeleted: { $ne: true } }),
+        Model.countDocuments({ tenantId: req.tenant, status: 'draft', isDeleted: { $ne: true } }),
+      ]);
+      return { name: ct.name, slug: ct.slug, fields: ct.fields.length, all, published, scheduled, drafts };
+    }));
+
+    for (const stats of contentStats) {
+      const { all, published, scheduled, drafts } = stats;
       totalEntries += all;
       totalPublished += published;
       totalScheduled += scheduled;
       totalDrafts += drafts;
-      breakdown.push({ name: ct.name, slug: ct.slug, fields: ct.fields.length, all, published, scheduled, drafts });
+      breakdown.push(stats);
     }
 
     const { default: Form } = await import('../models/form.js');
-    totalForms = await Form.countDocuments({ tenantId: req.tenant });
-
     const { default: Webhook } = await import('../models/webhook.js');
-    totalWebhooks = await Webhook.countDocuments({ tenantId: req.tenant });
+    [totalForms, totalWebhooks] = await Promise.all([
+      Form.countDocuments({ tenantId: req.tenant }),
+      Webhook.countDocuments({ tenantId: req.tenant }),
+    ]);
 
     res.json({
       totalContentTypes: cts.length,

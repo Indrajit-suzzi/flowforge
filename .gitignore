@@ -1,43 +1,44 @@
 # Dependencies
 node_modules/
 */node_modules/
-
 # Environment
 .env
 .env.local
 .env.*.local
-
 # Build outputs
 dist/
 build/
-
 # Uploads
 backend/uploads/
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
 # OS
 .DS_Store
 Thumbs.db
-
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
 # Worktrees
 .worktrees/
-
 # Testing
 coverage/
 .nyc_output/
-
 # Misc
 *.tmp
 *.temp
+
+# WhatsApp session data
+wa-sessions/
+wa-sessions-test/
+.wwebjs_cache/
+# AI agent tooling
+.agents/
+.antigravitycli/
+.codex/
+.superpowers/

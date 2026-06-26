@@ -66,10 +66,12 @@ export default function ApiKeys() {
     e.preventDefault();
     setSaving(true);
     try {
-      const scopes = form.scopes.length === 0
-        ? [{ contentType: '*', permissions: ['read', 'write', 'delete'] }]
-        : form.scopes;
-      const res = await api.post('/api/v1/api-keys', { name: form.name, scopes, rateLimit: { maxRequests: form.maxRequests, windowMs: form.windowMs } });
+      if (form.scopes.length === 0) {
+        toast.error('Select at least one content type scope');
+        setSaving(false);
+        return;
+      }
+      const res = await api.post('/api/v1/api-keys', { name: form.name, scopes: form.scopes, rateLimit: { maxRequests: form.maxRequests, windowMs: form.windowMs } });
       setNewKey(res.data);
       setForm({ name: '', scopes: [], maxRequests: 100, windowMs: 60000 });
       setShowForm(false);
@@ -128,7 +130,7 @@ export default function ApiKeys() {
 
             <div style={{ marginBottom: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
-                Content Type Access <span style={{ color: '#475569', fontWeight: 400 }}>(leave empty for full access)</span>
+                Content Type Access <span style={{ color: '#475569', fontWeight: 400 }}>(select at least one)</span>
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflow: 'auto' }}>
                 {contentTypes.map(ct => (

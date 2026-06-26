@@ -155,3 +155,329 @@
   cursor: pointer;
   margin-left: 6px;
 }
+
+.wa-section {
+  text-align: left;
+}
+
+.wa-label {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.wa-phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+  position: relative;
+}
+
+.wa-phone-input-wrapper:focus-within {
+  border-color: var(--color-peach);
+  box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.15);
+}
+
+.wa-country-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px 12px 14px;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.wa-country-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.wa-country-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.wa-country-code {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.wa-chevron {
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease;
+}
+
+.wa-chevron.open {
+  transform: rotate(180deg);
+}
+
+.wa-phone-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-glass);
+  flex-shrink: 0;
+}
+
+.wa-input {
+  width: 100%;
+  padding: 12px 10px;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-family: var(--font-body);
+  letter-spacing: 0.5px;
+}
+
+.wa-input::placeholder {
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+}
+
+.wa-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 12px 14px 12px 4px;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.wa-clear-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.wa-country-dropdown {
+  position: relative;
+}
+
+.wa-country-list {
+  position: absolute;
+  z-index: 50;
+  top: 4px;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #1a1424;
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+.wa-country-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.wa-country-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wa-country-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.wa-country-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.wa-country-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wa-country-option.active {
+  background: rgba(255, 126, 95, 0.1);
+  color: var(--color-peach);
+}
+
+.wa-country-name {
+  flex: 1;
+  text-align: left;
+}
+
+.wa-country-code-label {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.wa-country-check {
+  color: var(--color-peach);
+  flex-shrink: 0;
+}
+
+.wa-country-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+  min-height: 18px;
+}
+
+.wa-valid-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.wa-otp-input {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  padding: 16px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.wa-otp-input:focus {
+  border-color: var(--color-peach);
+  box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.15);
+  outline: none;
+}
+
+.wa-hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.wa-error {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.wa-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  margin-top: 14px;
+  background: linear-gradient(135deg, var(--color-peach), var(--color-coral));
+  border: none;
+  border-radius: 12px;
+  color: #080511;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wa-send-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px -8px rgba(255, 126, 95, 0.4);
+}
+
+.wa-send-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.wa-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wa-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+
+.wa-back-btn:hover:not(:disabled) {
+  color: var(--color-text-secondary);
+}
+
+.wa-back-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wa-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.wa-cooldown {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.wa-success {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.wa-success-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: #22c55e;
+  animation: waSuccessPop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes waSuccessPop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.wa-success h2 {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.wa-success-text {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}

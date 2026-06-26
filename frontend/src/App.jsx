@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import CompleteProfile from './pages/CompleteProfile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -72,10 +73,11 @@ function OAuthCallback() {
   return <PageLoader />;
 }
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, requireProfileComplete = true }) {
   const { user, loading } = useLocalAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/sign-in" replace />;
+  if (requireProfileComplete && !user.profileComplete) return <Navigate to="/complete-profile" replace />;
   return children;
 }
 
@@ -109,6 +111,7 @@ export default function App() {
         <Route path="/" element={<ErrorBoundary><Landing /></ErrorBoundary>} />
         <Route path="/sign-in" element={<ErrorBoundary><AuthPage /></ErrorBoundary>} />
         <Route path="/auth/callback" element={<ErrorBoundary><OAuthCallback /></ErrorBoundary>} />
+        <Route path="/complete-profile" element={<ProtectedRoute requireProfileComplete={false}><ErrorBoundary><CompleteProfile /></ErrorBoundary></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedLayout><PageBoundary><Dashboard /></PageBoundary></ProtectedLayout>} />
         <Route path="/content-types" element={<ProtectedLayout><PageBoundary><ContentTypes /></PageBoundary></ProtectedLayout>} />
         <Route path="/content/:slug" element={<ProtectedLayout><PageBoundary><ContentEntries /></PageBoundary></ProtectedLayout>} />

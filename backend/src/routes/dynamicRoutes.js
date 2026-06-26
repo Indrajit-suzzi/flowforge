@@ -1,5 +1,4 @@
 import express from 'express';
-import ContentType from '../models/contentType.js';
 import ContentVersion from '../models/contentVersion.js';
 import getModel from '../models/genericModel.js';
 import { logAudit } from '../utils/auditLogger.js';
@@ -8,12 +7,25 @@ import { cacheControl } from '../utils/cacheControl.js';
 import { validateEntry } from '../utils/fieldValidation.js';
 import { getContentType } from '../utils/contentTypeCache.js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
+import { typeMap, saveVersion } from '../utils/contentUtils.js';
 
 const META_FIELDS = ['status', 'locale', 'translations', 'tags', 'accessPassword', 'notes', 'workflowStage'];
+
+const hasProtectedEntryAccess = (req, entry) => {
+  if (!entry.accessPassword || req.userRole === 'admin') return true;
+  const token = req.headers['x-entry-access-token'];
+  if (!token) return false;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { audience: 'entry-access' });
+    return decoded.entryId === entry._id.toString() && decoded.tenantId === req.tenant;
+  } catch {
+    return false;
+  }
+};
 
 const autoSlug = (ct, body) => {
   const slugField = ct.fields.find(f => f.name === 'slug' && (f.type === 'String' || f.type === 'RichText'));
@@ -22,16 +34,6 @@ const autoSlug = (ct, body) => {
   if (firstStrField && body[firstStrField.name]) {
     body[slugField.name] = body[firstStrField.name].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
   }
-};
-
-const saveVersion = async ({ tenantId, contentTypeSlug, contentTypeName, entryId, data, status, userId, description }) => {
-  const lastVersion = await ContentVersion.findOne({ tenantId, entryId }).sort({ version: -1 });
-  const version = (lastVersion?.version || 0) + 1;
-  await ContentVersion.create({
-    tenantId, contentTypeSlug, contentTypeName, entryId,
-    version, data, status: status || data.status || 'draft',
-    createdBy: userId, changeDescription: description || ''
-  });
 };
 
 const populateReferences = async (entries, ct, _locale) => {
@@ -152,7 +154,17 @@ router.get('/:modelName', cacheControl, async (req, res) => {
       Model.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
     ]);
     
-    let data = docs.map(e => { const o = e.toObject(); const p = !!o.accessPassword; delete o.accessPassword; delete o.notes; return { ...o, passwordProtected: p }; });
+    let data = docs.map(e => {
+      const o = e.toObject();
+      const passwordProtected = !!o.accessPassword;
+      const canAccess = hasProtectedEntryAccess(req, e);
+      delete o.accessPassword;
+      delete o.notes;
+      if (passwordProtected && !canAccess) {
+        for (const field of ct.fields) delete o[field.name];
+      }
+      return { ...o, passwordProtected, accessRequired: passwordProtected && !canAccess };
+    });
     if (req.query.locale) {
       data = data.map(e => applyLocale(e, req.query.locale));
     }
@@ -172,6 +184,9 @@ router.get('/:modelName/:id', cacheControl, async (req, res) => {
     const Model = getModel(ct.name, Object.fromEntries(ct.fields.map(f => [f.name, typeMap[f.type] || String])));
     let data = await Model.findOne({ _id: req.params.id, tenantId: req.tenant, isDeleted: { $ne: true } });
     if (!data) return res.status(404).json({ message: 'Entry not found' });
+    if (!hasProtectedEntryAccess(req, data)) {
+      return res.status(403).json({ message: 'Entry password required', passwordProtected: true });
+    }
     data = data.toObject();
     const p = !!data.accessPassword;
     delete data.accessPassword;
@@ -441,7 +456,7 @@ router.patch('/:modelName/bulk', async (req, res) => {
     );
 
     for (const id of ids) {
-      const entry = await Model.findById(id);
+      const entry = await Model.findOne({ _id: id, tenantId: req.tenant });
       if (entry) {
         await saveVersion({
           tenantId: req.tenant, contentTypeSlug: ct.slug, contentTypeName: ct.name,
@@ -559,7 +574,14 @@ router.post('/:modelName/:id/verify-password', async (req, res) => {
     if (!entry) return res.status(404).json({ message: 'Entry not found' });
     if (!entry.accessPassword) return res.json({ accessGranted: true });
     const isMatch = await bcrypt.compare(req.body.password || '', entry.accessPassword);
-    if (isMatch) return res.json({ accessGranted: true });
+    if (isMatch) {
+      const accessToken = jwt.sign(
+        { entryId: entry._id.toString(), tenantId: req.tenant },
+        process.env.JWT_SECRET,
+        { expiresIn: '10m', audience: 'entry-access' },
+      );
+      return res.json({ accessGranted: true, accessToken, expiresIn: 600 });
+    }
     res.status(403).json({ accessGranted: false, message: 'Incorrect password' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -609,7 +631,6 @@ router.post('/:modelName/:id/rollback/:versionId', async (req, res) => {
   }
 });
 
-// POST /:modelName/:id/transition — Transition an entry to a workflow stage
 router.post('/:modelName/bulk-delete', async (req, res) => {
   try {
     const ct = await getContentType(req.tenant, req.params.modelName);

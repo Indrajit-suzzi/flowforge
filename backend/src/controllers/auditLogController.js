@@ -1,5 +1,4 @@
 import AuditLog from '../models/auditLog.js';
-import mongoose from 'mongoose';
 
 export const getAuditLogs = async (req, res) => {
     try {
@@ -8,19 +7,21 @@ export const getAuditLogs = async (req, res) => {
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
         const { action, entityType, userId } = req.query;
 
-        const filter = { tenantId: new mongoose.Types.ObjectId(String(tenantId)) };
+        const filter = { tenantId: String(tenantId) };
         if (action && typeof action === 'string' && !action.startsWith('$')) filter.action = action;
         if (entityType && typeof entityType === 'string' && !entityType.startsWith('$')) filter.entityType = entityType;
         if (userId && typeof userId === 'string' && !userId.startsWith('$')) filter.userId = userId;
 
-        const logs = await AuditLog.find(filter)
+        const [logs, total] = await Promise.all([
+          AuditLog.find(filter)
             .sort({ createdAt: -1 })
-            .skip((parseInt(page) - 1) * parseInt(limit))
-            .limit(parseInt(limit));
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean(),
+          AuditLog.countDocuments(filter),
+        ]);
 
-        const total = await AuditLog.countDocuments(filter);
-
-        res.json({ logs, total, page: parseInt(page), totalPages: Math.ceil(total / parseInt(limit)) });
+        res.json({ logs, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -29,7 +30,7 @@ export const getAuditLogs = async (req, res) => {
 export const exportAuditLogsCSV = async (req, res) => {
   try {
     const tenantId = req.tenantId || req.tenant;
-    const filter = { tenantId: new mongoose.Types.ObjectId(String(tenantId)) };
+    const filter = { tenantId: String(tenantId) };
     if (req.query.action && typeof req.query.action === 'string' && !req.query.action.startsWith('$')) filter.action = req.query.action;
     if (req.query.entityType && typeof req.query.entityType === 'string' && !req.query.entityType.startsWith('$')) filter.entityType = req.query.entityType;
 
@@ -61,7 +62,7 @@ export const getAuditStats = async (req, res) => {
         const tenantId = req.tenantId || req.tenant;
 
         const stats = await AuditLog.aggregate([
-            { $match: { tenantId: new mongoose.Types.ObjectId(String(tenantId)) } },
+            { $match: { tenantId: String(tenantId) } },
             { $group: { _id: '$action', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);

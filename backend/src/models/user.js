@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    tenantId: {
+      type: String,
+      index: true,
+    },
     email: {
       type: String,
       required: true,
@@ -29,6 +33,15 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       default: 'member'
+    },
+    phoneNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    profileComplete: {
+      type: Boolean,
+      default: true,
     },
     isActive: {
       type: Boolean,
@@ -50,8 +63,8 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ username: 1 });
-userSchema.index({ role: 1 });
-userSchema.index({ isActive: 1 });
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ tenantId: 1, isActive: 1 });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 

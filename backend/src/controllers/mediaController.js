@@ -109,6 +109,10 @@ export const serveFile = async (req, res) => {
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: "File not found" });
         }
+        const media = await Media.findOne({ name: fileName, tenantId: req.tenant }).lean();
+        if (!media) return res.status(404).json({ error: "File not found" });
+        res.type(media.mimeType);
+        res.setHeader('Cache-Control', 'private, max-age=3600');
         res.sendFile(filePath);
     } catch (err) {
         res.status(500).json({ error: err.message });

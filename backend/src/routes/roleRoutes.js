@@ -1,6 +1,7 @@
 import express from 'express';
 import Role from '../models/role.js';
 import { logAudit } from '../utils/auditLogger.js';
+import { invalidateRolePermissions } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.post('/', async (req, res) => {
     const role = await Role.create({
       tenantId: req.tenant, name, slug, description, permissions
     });
+    invalidateRolePermissions(req.tenant, role.slug);
     await logAudit({
       tenantId: req.tenant, userId: req.user?.id, action: 'create',
       entityType: 'role', entityId: role._id.toString(),
@@ -42,6 +44,8 @@ router.put('/:id', async (req, res) => {
       if (req.body[key] !== undefined) body[key] = req.body[key];
     }
     const updated = await Role.findByIdAndUpdate(req.params.id, body, { new: true });
+    invalidateRolePermissions(req.tenant, role.slug);
+    if (updated.slug !== role.slug) invalidateRolePermissions(req.tenant, updated.slug);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -55,6 +59,7 @@ router.delete('/:id', async (req, res) => {
     if (role.isSystem) return res.status(403).json({ message: 'Cannot delete system roles' });
 
     await Role.findByIdAndDelete(req.params.id);
+    invalidateRolePermissions(req.tenant, role.slug);
     await logAudit({
       tenantId: req.tenant, userId: req.user?.id, action: 'delete',
       entityType: 'role', entityId: req.params.id,

@@ -75,6 +75,10 @@ logger.info('JWT authentication enabled');
 import authRoutes from './routes/authRoutes.js';
 app.use("/api/v1/auth", authLimiter, authRoutes);
 
+// WhatsApp linking (no auth — needed before login)
+import whatsappRoutes from './routes/whatsappRoutes.js';
+app.use("/api/v1/whatsapp", authLimiter, whatsappRoutes);
+
 // Public templates endpoint
 app.get("/api/v1/content-types/templates", (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=300');

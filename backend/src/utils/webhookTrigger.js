@@ -1,20 +1,56 @@
 import Webhook from '../models/webhook.js';
 import WebhookLog from '../models/webhookLog.js';
 import crypto from 'crypto';
+import dns from 'node:dns/promises';
+import net from 'node:net';
 import logger from './logger.js';
 
-const isPrivateIP = (urlStr) => {
-  try {
-    const url = new URL(urlStr);
-    const hostname = url.hostname.toLowerCase();
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '[::1]') return true;
-    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return true;
-    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return true;
-    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) return true;
-    return false;
-  } catch {
-    return true;
+export const isBlockedAddress = (address) => {
+  if (net.isIPv4(address)) {
+    const [a, b] = address.split('.').map(Number);
+    return a === 0 || a === 10 || a === 127
+      || (a === 100 && b >= 64 && b <= 127)
+      || (a === 169 && b === 254)
+      || (a === 172 && b >= 16 && b <= 31)
+      || (a === 192 && (b === 0 || b === 168))
+      || (a === 198 && (b === 18 || b === 19))
+      || a >= 224;
   }
+  if (net.isIPv6(address)) {
+    const normalized = address.toLowerCase();
+    if (normalized === '::' || normalized === '::1') return true;
+    if (normalized.startsWith('fc') || normalized.startsWith('fd') || /^fe[89ab]/.test(normalized)) return true;
+    const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    return mapped ? isBlockedAddress(mapped[1]) : false;
+  }
+  return true;
+};
+
+export const assertPublicWebhookUrl = async (urlStr) => {
+  const url = new URL(urlStr);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Webhook URL must use HTTP or HTTPS');
+  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (hostname === 'localhost' || hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+    throw new Error('Webhook URL points to a private or internal address');
+  }
+  const addresses = net.isIP(hostname)
+    ? [{ address: hostname }]
+    : await dns.lookup(hostname, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(({ address }) => isBlockedAddress(address))) {
+    throw new Error('Webhook URL points to a private or reserved address');
+  }
+  return url;
+};
+
+const safeFetch = async (urlStr, options, redirects = 0) => {
+  const url = await assertPublicWebhookUrl(urlStr);
+  const response = await fetch(url, { ...options, redirect: 'manual' });
+  if (response.status >= 300 && response.status < 400 && response.headers.get('location')) {
+    if (redirects >= 3) throw new Error('Too many webhook redirects');
+    const nextUrl = new URL(response.headers.get('location'), url);
+    return safeFetch(nextUrl.toString(), options, redirects + 1);
+  }
+  return response;
 };
 
 const deliver = async ({ webhook, event, contentType, payload, attempt = 1, retryOf = null }) => {
@@ -22,19 +58,12 @@ const deliver = async ({ webhook, event, contentType, payload, attempt = 1, retr
   const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
   let error = null;
 
-  if (isPrivateIP(webhook.url)) {
-    error = 'Blocked: webhook URL points to a private or internal address';
-    logger.warn({ url: webhook.url, webhookId: webhook._id }, error);
-    await WebhookLog.create({ tenantId: webhook.tenantId, webhookId: webhook._id, webhookName: webhook.name, webhookUrl: webhook.url, event, contentType, status: 'failed', error, payload: payload.substring(0, 5000), attempt, retryOf });
-    return;
-  }
-
   let status = 'failed';
   let responseCode = null;
   let responseBody = null;
 
   try {
-    const response = await fetch(webhook.url, {
+    const response = await safeFetch(webhook.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,13 +157,10 @@ export const triggerWebhooks = async ({ tenantId, event, contentType, data }) =>
 
 const sendPayload = async ({ webhook, event, payload }) => {
   const start = Date.now();
-  if (isPrivateIP(webhook.url)) {
-    return { status: 'failed', error: 'Blocked: webhook URL points to a private or internal address', duration: Date.now() - start };
-  }
   const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
   let status = 'failed', responseCode = null, responseBody = null, error = null;
   try {
-    const response = await fetch(webhook.url, {
+    const response = await safeFetch(webhook.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

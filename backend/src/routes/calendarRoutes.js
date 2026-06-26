@@ -4,9 +4,9 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 import tenantMiddleware from '../middlewares/tenantMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import { getAllContentTypes } from '../utils/contentTypeCache.js';
+import { typeMap } from '../utils/contentUtils.js';
 
 const router = express.Router();
-const typeMap = { String: String, Number: Number, Date: Date, Boolean: Boolean, RichText: String, Reference: String };
 
 router.get('/', authMiddleware, tenantMiddleware, async (req, res) => {
   try {

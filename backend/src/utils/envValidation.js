@@ -48,8 +48,16 @@ export const validateEnv = () => {
     logger.warn('GitHub OAuth credentials are missing. GitHub sign-in will be unavailable.');
   }
 
-  if (process.env.JWT_SECRET === 'change-this-to-a-random-secret-in-production' && process.env.NODE_ENV === 'production') {
-    logger.warn('JWT_SECRET is still set to the default development value. Change it in production!');
+  if (!process.env.WA_SESSION_PATH) {
+    process.env.WA_SESSION_PATH = './wa-sessions';
+    logger.debug('Set default for WA_SESSION_PATH=./wa-sessions');
+  }
+
+  if (process.env.NODE_ENV === 'production' && (
+    process.env.JWT_SECRET === 'change-this-to-a-random-secret-in-production'
+    || process.env.JWT_SECRET.length < 32
+  )) {
+    throw new Error('JWT_SECRET must be a non-default secret of at least 32 characters in production');
   }
 
   logger.info('Environment validation passed');

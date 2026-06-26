@@ -55,11 +55,11 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const keys = await ApiKey.find({ tenantId: req.tenant });
+    const keys = await ApiKey.find({ tenantId: req.tenant }).lean();
     const { getKeyRateUsage } = await import('../middlewares/keyRateLimit.js');
     const withUsage = keys.map(k => {
       const usage = getKeyRateUsage(k._id);
-      return { ...k.toObject(), rateUsage: usage };
+      return { ...k, rateUsage: usage };
     });
     res.json(withUsage);
   } catch (err) {
